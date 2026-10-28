@@ -1,7 +1,7 @@
 # Entries + 物品分类树 — 设计说明
 
 **日期：** 2026-10-28  
-**状态：** 待用户确认  
+**状态：** 已确认  
 **仓库：** CoderSxy/food-notes  
 **前置：** `docs/superpowers/specs/2026-10-28-food-platform-design.md`
 
