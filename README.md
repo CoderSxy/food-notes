@@ -13,3 +13,5 @@ Next.js 15 App Router + TypeScript + Supabase Postgres + Vercel，美食记录�
 手机号验证码为测试模式，从服务端 `[OTP_TEST]` 日志读取，未接入真实短信。AI 通过服务端 OpenAI 兼容接口调用，配置 AI_BASE_URL、AI_MODEL、AI_API_KEY。密钥只放本地环境或 Vercel，禁止提交。
 
 设计与逐项实施计划保留于 `docs/superpowers/`。
+
+数据库所有表开启 RLS，匿名客户端默认无法读写。自建 JWT 会话不使用 Supabase Auth；所有数据经 Route Handlers 的 service role 访问，接口负责登录与所有权校验。service role 绝不能提供给浏览器。
