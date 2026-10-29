@@ -1,7 +1,7 @@
 # Username + Password Auth (primary), OTP secondary
 
 **Date:** 2026-10-29  
-**Status:** Draft for review  
+**Status:** Approved  
 **Repo:** food-notes  
 **Approach:** A — extend existing `users` + JWT session (not Supabase Auth)
 

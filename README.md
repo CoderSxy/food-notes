@@ -2,7 +2,7 @@
 
 一个多人使用的美食记录与附近 AI 推荐 MVP。使用 Next.js 15 App Router、TypeScript、Supabase Postgres、Zod、jose、Tailwind CSS 与 Vitest，可部署到 Vercel。
 
-已实现手机号测试验证码登录、30 天 httpOnly JWT 会话、餐饮与物品的统一列表和详情、分类筛选、登记与本人删除、定位及手动经纬度、餐饮多菜系、物品两级分类、多标签、1–5 整数评分、附近餐饮距离排序和 AI 推荐。页面文案为简体中文。
+已实现用户名密码（默认）与手机号测试验证码（次要）登录、30 天 httpOnly JWT 会话、餐饮与物品的统一列表和详情、分类筛选、登记与本人删除、定位及手动经纬度、餐饮多菜系、物品两级分类、多标签、1–5 整数评分、附近餐饮距离排序和 AI 推荐。页面文案为简体中文。
 
 ## 本地运行
 
@@ -42,7 +42,7 @@ npm start
 | `entries` / `item` | 物品，地点选填；通过 `entry_categories` 至少选择一个小类，应用层校验小类存在且 `parent_id` 非空 |
 | `categories` | 大类 → 小类两级树；触发器禁止第三级及将已有子类的大类移动到其它大类下 |
 | `entry_tags` / `tags` | 餐饮和物品共用标签 |
-| `users` / `otp_codes` | 自建账号与测试验证码 |
+| `users` / `otp_codes` | 自建账号与测试验证码；`users` 支持可空 `phone`、唯一 `username` 与 `password_hash`（预置账号，无公开注册） |
 
 评分为 1–5 整数；经纬度可空时仍有范围检查。分类种子包含零食、酒水、饮料、奶茶、咖啡五个大类，酒水含白酒、红酒、啤酒、黄酒、清酒，并为其它大类各提供一个起始小类。所有表开启 RLS，默认拒绝匿名客户端访问。
 
@@ -63,6 +63,18 @@ npm start
 
 `.env.example` 只包含空密钥和非敏感默认值。`.env`、`.env.local`、其他 `.env*` 与 `.vercel` 均已忽略，只有 `.env.example` 可提交。
 
+## 登录与账号
+
+默认使用**用户名 + 密码**登录（登录页「账号密码」）；**手机验证码**为次要方式（「手机验证码」标签）。不提供公开自助注册。
+
+预置账号步骤：
+
+1. 在 Supabase 执行 [003_username_password.sql](supabase/migrations/003_username_password.sql)（见上文初始化列表）。
+2. 本地生成密码哈希：`node scripts/hash-password.mjs '你的密码'`（至少 8 位，勿将真实生产密码提交到 git）。
+3. 参考 [seed_users.example.sql](supabase/seed_users.example.sql) 将 `HASH` 替换为脚本输出后插入 `users` 表。
+
+仅手机 OTP 的用户可继续无用户名/密码；仅密码账号的 `phone` 可为空。会话 JWT 对无手机账号同样有效。
+
 ## 验证码测试模式
 
 登录页输入手机号后点击「发送验证码」。在本地终端或 Vercel 函数日志查看：
@@ -71,7 +83,9 @@ npm start
 [OTP_TEST] phone=<手机号> code=<六位验证码>
 ```
 
-验证码十分钟有效，同一手机号一分钟内限制重发。正确码校验后以条件更新标记已使用，错误、过期、重复消费均拒绝。接口不返回验证码；取得服务端日志的测试人员才能完成登录。首次登录自动创建账号。短信提供商尚未接入，`channel` 字段预留扩展。
+验证码十分钟有效，同一手机号一分钟内限制重发。正确码校验后以条件更新标记已使用，错误、过期、重复消费均拒绝。接口不返回验证码；取得服务端日志的测试人员才能完成登录。首次 OTP 登录自动创建仅手机号账号。短信提供商尚未接入，`channel` 字段预留扩展。
+
+账号密码登录：`POST /api/auth/login`，失败统一提示「用户名或密码错误」。`GET /api/auth/me` 返回 `username`、`nickname`、`hasPhone` 等，从不返回 `password_hash`。
 
 ## 使用与 AI 行为
 
@@ -117,4 +131,4 @@ npm start
 
 单元与接口测试还覆盖 entries 类型校验、叶子分类校验、关联失败清理、匿名请求、物品所有权和旧 foods 接口的餐饮限制。基础测试覆盖距离计算、整数评分和多选校验、验证码存储与消费、会话签名、匿名请求与所有权限制、AI 配置与错误、未知 ID 过滤和无样本不调用 AI。Chromium 移动视口冒烟验证使用模拟 API，覆盖无地点物品登记及详情、带坐标和菜系的餐饮登记、三种首页筛选与附近餐饮/推荐展示；未发现浏览器运行时错误。未使用真实 Supabase 项目或真实 AI 凭据进行外部服务联调；部署后按上面的步骤完成验证。
 
-本轮按 [Entries 设计说明](docs/superpowers/specs/2026-10-28-entries-items-design.md) 与 [六项实施计划](docs/superpowers/plans/2026-10-28-entries-items.md) 实现；保留原有 [基础设计](docs/superpowers/specs/2026-10-28-food-platform-design.md)。地图足迹、真实短信与物品 AI 推荐不在本轮范围内。
+本轮按 [Entries 设计说明](docs/superpowers/specs/2026-10-28-entries-items-design.md) 与 [六项实施计划](docs/superpowers/plans/2026-10-28-entries-items.md) 实现；保留原有 [基础设计](docs/superpowers/specs/2026-10-28-food-platform-design.md)。用户名密码登录见 [设计说明](docs/superpowers/specs/2026-10-29-username-password-auth-design.md) 与 [实施计划](docs/superpowers/plans/2026-10-29-username-password-auth.md)。地图足迹、真实短信与物品 AI 推荐不在本轮范围内。
