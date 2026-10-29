@@ -29,7 +29,9 @@ npm start
 1. 创建 Supabase 项目。
 2. 在 SQL Editor 执行 [001_initial.sql](supabase/migrations/001_initial.sql)。首次执行一次即可。
 3. 执行 [seed.sql](supabase/seed.sql) 初始化十种常用菜系；种子可重复执行。
-4. 从项目设置复制项目 URL、anon key 和 service role key 到本地环境变量或 Vercel 环境变量。
+4. 执行 [002_entries_items.sql](supabase/migrations/002_entries_items.sql)，将已有餐饮及关联表迁移到 `entries`，保留数据与 RLS。迁移只执行一次。
+5. 执行 [seed_categories.sql](supabase/seed_categories.sql)，初始化物品大类与小类；种子可重复执行。
+6. 从项目设置复制项目 URL、anon key 和 service role key 到本地环境变量或 Vercel 环境变量。
 
 表包括 `users`、`otp_codes`、`foods`、`cuisines`、`tags` 与两个关联表。所有表开启 RLS，默认拒绝匿名客户端访问。
 
