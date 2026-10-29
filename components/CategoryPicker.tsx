@@ -24,7 +24,7 @@ export default function CategoryPicker({ value, onChange }: { value: string[]; o
       <option value="">请选择大类</option>{roots.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
     </select>
     {loading && <p role="status">正在加载分类…</p>}
-    {error && <p className="error" role="alert">{error} <button type="button" onClick={() => setRetry(n => n + 1)}>重新加载分类</button></p>}
+    {error && <p className="error" role="alert">{error} <button type="button" className="secondary" onClick={() => setRetry(n => n + 1)}>重新加载分类</button></p>}
     {rootId && !loading && !error && !children.length && <p>此大类暂无小类，请选择其它大类。</p>}
     {children.map(c => <label className="choice" key={c.id}><input type="checkbox" checked={value.includes(c.id)} disabled={!value.includes(c.id) && value.length >= 20}
       onChange={e => onChange(e.target.checked ? [...value, c.id] : value.filter(id => id !== c.id))}/>{c.name}</label>)}

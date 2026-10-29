@@ -57,12 +57,13 @@ export default function Login() {
   }
 
   return (
-    <section className="panel narrow">
+    <section className="panel narrow login-card">
       <h1>登录美食地图</h1>
       {signedIn ? (
         <>
           <p>你已登录，可以继续记录美食。</p>
           <button
+            className="secondary"
             onClick={async () => {
               await requestJson('/api/auth/logout', jsonBody({}));
               setSignedIn(false);
@@ -74,15 +75,14 @@ export default function Login() {
         </>
       ) : (
         <>
-          <p className="muted">
-            <button type="button" onClick={() => setMode('password')} disabled={mode === 'password'}>
+          <div className="tabs" aria-label="登录方式">
+            <button type="button" className="tab" aria-pressed={mode === 'password'} onClick={() => setMode('password')}>
               账号密码
             </button>
-            {' · '}
-            <button type="button" onClick={() => setMode('otp')} disabled={mode === 'otp'}>
+            <button type="button" className="tab" aria-pressed={mode === 'otp'} onClick={() => setMode('otp')}>
               手机验证码
             </button>
-          </p>
+          </div>
           {mode === 'password' ? (
             <form onSubmit={loginPassword}>
               <label htmlFor="username">用户名</label>
@@ -124,7 +124,7 @@ export default function Login() {
                 onChange={(e) => setPhone(e.target.value)}
               />
               <p>
-                <button type="button" disabled={busy || !phone} onClick={() => void otpAction(true)}>
+                <button type="button" className="secondary" disabled={busy || !phone} onClick={() => void otpAction(true)}>
                   发送验证码
                 </button>
               </p>
