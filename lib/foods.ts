@@ -1,23 +1,17 @@
-import { createAdminClient } from '@/lib/supabase/admin';
-import { haversineKm,type LatLng } from '@/lib/geo/haversine';
-export type DictionaryItem={id:string;name:string};
-export type Food={id:string;user_id:string;name:string;note:string|null;rating:number;lat:number;lng:number;address_text:string|null;created_at:string;cuisines:DictionaryItem[];tags:DictionaryItem[];distanceKm?:number};
-export const foodSelect='*, food_cuisines(cuisines(id,name)), food_tags(tags(id,name))';
-type RawFood=Omit<Food,'cuisines'|'tags'> & {food_cuisines:{cuisines:DictionaryItem}[];food_tags:{tags:DictionaryItem}[]};
-export function hydrateFood(raw:RawFood):Food {
- const {food_cuisines,food_tags,...food}=raw;
- return {...food,cuisines:food_cuisines.map(v=>v.cuisines),tags:food_tags.map(v=>v.tags)};
+// Compatibility helpers: legacy foods always refer to coordinate-bearing places.
+import { getEntry, isPlaceEntry, listEntries, nearbyPlaceEntries } from '@/lib/entries';
+export type { DictionaryItem } from '@/lib/entries';
+// Preserve the old public shape for existing clients and AI fixtures.
+export type Food = {
+  id: string; user_id: string; name: string; note: string | null; rating: number;
+  lat: number; lng: number; address_text: string | null; created_at: string;
+  cuisines: { id: string; name: string }[]; tags: { id: string; name: string }[]; distanceKm?: number;
+};
+export async function listFoods(limit = 100) {
+  return (await listEntries({ kind: 'place' }, limit)).filter(isPlaceEntry);
 }
-export async function listFoods(limit=100) {
- const {data,error}=await createAdminClient().from('foods').select(foodSelect).order('created_at',{ascending:false}).limit(limit);
- if(error)throw error;
- return (data as unknown as RawFood[]).map(hydrateFood);
+export async function getFood(id: string) {
+  const entry = await getEntry(id, 'place');
+  return entry && isPlaceEntry(entry) ? entry : null;
 }
-export async function getFood(id:string) {
- const {data,error}=await createAdminClient().from('foods').select(foodSelect).eq('id',id).maybeSingle();
- if(error)throw error;
- return data ? hydrateFood(data as unknown as RawFood) : null;
-}
-export async function nearbyFoods(point:LatLng,radiusKm=5) {
- return (await listFoods(500)).map(food=>({...food,distanceKm:haversineKm(point,food)})).filter(food=>food.distanceKm<=radiusKm).sort((a,b)=>a.distanceKm-b.distanceKm);
-}
+export const nearbyFoods = nearbyPlaceEntries;
