@@ -2,6 +2,7 @@ import { beforeEach,describe,expect,it,vi } from 'vitest';
 const mocks=vi.hoisted(()=>({user:null as null|{userId:string;phone:string},getFood:vi.fn(),nearbyFoods:vi.fn(),admin:vi.fn(),chat:vi.fn()}));
 vi.mock('@/lib/auth/requestUser',()=>({requireUser:async()=>{if(!mocks.user){const {HttpError}=await import('@/lib/http');throw new HttpError('请先登录',401);}return mocks.user;}}));
 vi.mock('@/lib/foods',()=>({getFood:mocks.getFood,listFoods:vi.fn(),nearbyFoods:mocks.nearbyFoods}));
+vi.mock('@/lib/entries',()=>({nearbyPlaceEntries:mocks.nearbyFoods,createEntry:vi.fn()}));
 vi.mock('@/lib/supabase/admin',()=>({createAdminClient:mocks.admin}));
 vi.mock('@/lib/ai/client',()=>({chatCompletion:mocks.chat,buildMessages:vi.fn(),parseRecommendations:vi.fn()}));
 import { POST as create } from '@/app/api/foods/route';
