@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { HttpError } from '@/lib/http';
-export type Category = { id: string; name: string; parent_id: string | null };
+export type Category = { id: string; name: string; parent_id: string | null; parent?: { name: string } | null };
 export async function listRootCategories(): Promise<Category[]> {
   const { data, error } = await createAdminClient().from('categories').select('id,name,parent_id')
     .is('parent_id', null).order('created_at').order('slug');

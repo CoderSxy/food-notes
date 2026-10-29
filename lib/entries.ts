@@ -10,7 +10,7 @@ export type Entry = {
   cuisines: DictionaryItem[]; categories: Category[]; tags: DictionaryItem[]; distanceKm?: number;
 };
 export type PlaceEntry = Entry & { kind: 'place'; lat: number; lng: number };
-export const entrySelect = '*, entry_cuisines(cuisines(id,name)), entry_categories(categories(id,name,parent_id)), entry_tags(tags(id,name))';
+export const entrySelect = '*, entry_cuisines(cuisines(id,name)), entry_categories(categories(id,name,parent_id,parent:categories!categories_parent_id_fkey(name))), entry_tags(tags(id,name))';
 type RawEntry = Omit<Entry, 'cuisines' | 'categories' | 'tags'> & {
   entry_cuisines: { cuisines: DictionaryItem }[];
   entry_categories: { categories: Category }[];
