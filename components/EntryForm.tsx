@@ -48,7 +48,7 @@ export default function EntryForm() {
     <label htmlFor="address">地址（选填）</label><input id="address" maxLength={300} value={address} onChange={e => setAddress(e.target.value)}/>
     <TagPicker value={tags} onChange={setTags} suggestions={suggestions}/>
     <label htmlFor="note">备注（选填）</label><textarea id="note" maxLength={2000} value={note} onChange={e => setNote(e.target.value)} placeholder="记下口味、感受和推荐理由……"/>
-    <p className="error" role="alert">{error}</p>{!ready && <p><button type="button" onClick={() => void load()}>重新加载菜系和标签</button></p>}
+    <p className="error" role="alert">{error}</p>{!ready && <p><button type="button" className="secondary" onClick={() => void load()}>重新加载菜系和标签</button></p>}
     <button disabled={busy || !ready}>{busy ? '正在保存…' : '保存这份美味'}</button>
   </form>;
 }
