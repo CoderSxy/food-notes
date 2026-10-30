@@ -132,7 +132,13 @@ npm start
 
 详情的记录日期统一显示 UTC 的 `YYYY-MM-DD`，保留原始时间戳在 `<time datetime>` 中，避免依赖运行环境的时区和 locale。详情数据在 `useEffect` 请求完成后显示，首屏服务端和客户端都先显示加载状态；因此旧日期格式并不能解释当前页面的初始 hydration 警告。
 
-新增测试覆盖根布局和字体链接、表单、半星评分的 SSR → hydration，以及跨 UTC 日期边界的时间戳。干净 Chrome 的开发模式检查未复现 hydration 警告。若本地仍出现警告，请保留控制台的组件栈和 `+` / `-` 属性差异，并在禁用扩展的新浏览器配置中重试；若差异是应用没有设置的 `html` / `body` 属性，应排查浏览器扩展的 DOM 注入。不要用 `suppressHydrationWarning` 隐藏差异。
+根布局曾手动插入 Google Fonts 的 stylesheet / preconnect 链接（含 `crossOrigin="anonymous"`），这些节点会参与 React 与 Next App Router 的 head 管理，是属性差异的高概率来源；此前干净 Chrome 未复现警告，尚不能将其认定为已证实的根因。现将 Noto Sans SC（400/500/700）和 ZCOOL XiaoWei（400）都交给 `next/font/google` 构建时下载并自托管，通过固定 CSS 变量类使用，移除手写的 `<head>` 和字体链接。两者均支持 CJK unicode-range 分片；设置 `preload: false` 避免预加载大量分片。构建需能访问 Google Fonts，运行时无需外部字体请求。
+
+`html` / `body` 不读取浏览器环境，也未添加 `suppressHydrationWarning`。评分初始状态为数字 `4`，滑块通过 `Number()` 更新并保留 `0.5` 步长。其他客户端组件使用固定初始状态，登录、字典和记录数据在 effect 中获取，定位与浏览器跳转仅在 effect 或事件中执行；本轮扫描未发现其他首屏环境分支。
+
+测试覆盖根布局属性稳定且没有手写字体链接、首页/登录/推荐/表单/分类选择器的 SSR → hydration、全部半星值和滑块的数字值，以及跨 UTC 日期边界的时间戳。Vitest 中字体函数用固定类名模拟，实际字体加载由生产构建验证。若本地仍出现警告，请保留控制台的组件栈和 `+` / `-` 属性差异，并在禁用扩展的新浏览器配置中重试；若差异是应用没有设置的 `html` / `body` 属性，应排查浏览器扩展的 DOM 注入。
+
+本轮生产构建的干净 Chrome 冒烟检查（模拟 API、临时测试会话）覆盖首页、登录、推荐、新建与详情页：没有控制台或页面错误，SSR 与 hydration 后的文档属性一致，没有外部 Google Fonts 请求，新建表单从默认 4 分改为 4.5 分后保留半星显示。`npm test` 的 129 项测试及 `npm run build` 均通过。
 
 ## 验证状态与文档
 

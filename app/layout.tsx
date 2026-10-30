@@ -1,21 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Noto_Sans_SC, ZCOOL_XiaoWei } from "next/font/google";
 import "./globals.css";
+
+// Let Next own font assets and head hints. Disable preloading because these CJK
+// families are split into many unicode ranges rather than one useful subset.
+const notoSans = Noto_Sans_SC({ weight: ["400", "500", "700"], display: "swap", preload: false, variable: "--font-noto-sans" });
+const xiaoWei = ZCOOL_XiaoWei({ weight: "400", display: "swap", preload: false, variable: "--font-xiaowei" });
 
 export const metadata: Metadata = { title: "美食地图", description: "记下好味道，发现身边的美食" };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="zh-CN">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/* eslint-disable-next-line @next/next/no-page-custom-font -- next/font lacks CJK unicode-range for these families */}
-        <link
-          href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=ZCOOL+XiaoWei&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="zh-CN" className={`${notoSans.variable} ${xiaoWei.variable}`}>
       <body>
         <header className="site-header">
           <Link href="/" className="brand">
