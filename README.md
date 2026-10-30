@@ -2,7 +2,7 @@
 
 一个多人使用的美食记录与附近 AI 推荐 MVP。使用 Next.js 15 App Router、TypeScript、Supabase Postgres、Zod、jose、Tailwind CSS 与 Vitest，可部署到 Vercel。
 
-已实现用户名密码（默认）与手机号测试验证码（次要）登录、30 天 httpOnly JWT 会话、餐饮与物品的统一列表和详情、分类筛选、登记与本人删除、定位及手动经纬度、餐饮多菜系、物品两级分类、多标签、1–5 整数评分、附近餐饮距离排序和 AI 推荐。页面文案为简体中文。
+已实现用户名密码（默认）与手机号测试验证码（次要）登录、30 天 httpOnly JWT 会话、餐饮与物品的统一列表和详情、分类筛选、登记与本人删除、定位及手动经纬度、餐饮多菜系、物品两级分类、多标签、1–5 半星评分（0.5 分递增）、附近餐饮距离排序和 AI 推荐。页面文案为简体中文。
 
 ## 本地运行
 
@@ -32,7 +32,8 @@ npm start
 4. 执行 [002_entries_items.sql](supabase/migrations/002_entries_items.sql)，将已有餐饮及关联表迁移到 `entries`，保留数据与 RLS。迁移只执行一次。
 5. 执行 [seed_categories.sql](supabase/seed_categories.sql)，初始化物品大类与小类；种子可重复执行。
 6. 执行 [003_username_password.sql](supabase/migrations/003_username_password.sql) 一次，使 `phone` 可空并添加 `username`、`password_hash` 列。
-7. 从项目设置复制项目 URL、anon key 和 service role key 到本地环境变量或 Vercel 环境变量。
+7. 执行 [004_half_star_ratings.sql](supabase/migrations/004_half_star_ratings.sql) 一次，将评分改为支持 0.5 分递增的数值类型，保留已有整数评分。
+8. 从项目设置复制项目 URL、anon key 和 service role key 到本地环境变量或 Vercel 环境变量。
 
 迁移后主表为 `entries`，原 `foods` 数据保留，默认 `kind=place`；原关联表及其外键迁移为 `entry_cuisines` 和 `entry_tags`。数据模型：
 
@@ -44,7 +45,7 @@ npm start
 | `entry_tags` / `tags` | 餐饮和物品共用标签 |
 | `users` / `otp_codes` | 自建账号与测试验证码；`users` 支持可空 `phone`、唯一 `username` 与 `password_hash`（预置账号，无公开注册） |
 
-评分为 1–5 整数；经纬度可空时仍有范围检查。分类种子包含零食、酒水、饮料、奶茶、咖啡五个大类，酒水含白酒、红酒、啤酒、黄酒、清酒，并为其它大类各提供一个起始小类。所有表开启 RLS，默认拒绝匿名客户端访问。
+评分为 1–5 分，支持半星（0.5 分递增）；经纬度可空时仍有范围检查。分类种子包含零食、酒水、饮料、奶茶、咖啡五个大类，酒水含白酒、红酒、啤酒、黄酒、清酒，并为其它大类各提供一个起始小类。所有表开启 RLS，默认拒绝匿名客户端访问。
 
 本应用使用自建 JWT，而非 Supabase Auth。数据请求全部经过服务端 Route Handlers：服务端校验会话及记录所有者，再通过 service role 访问数据库。service role 绕过 RLS，严禁提供给浏览器。未登录无法读美食、登记或调用推荐，删除仅限本人记录。MVP 暂未提供编辑功能。
 
@@ -89,7 +90,7 @@ npm start
 
 ## 使用与 AI 行为
 
-1. 登录后点击「记一笔」，选择「餐饮店」或「物品」，填写名称和整数评分。
+1. 登录后点击「记一笔」，选择「餐饮店」或「物品」，填写名称和半星评分（1–5 分，0.5 分递增）。
 2. 餐饮选择菜系并填写经纬度；物品先选大类，再多选小类，地点可以留空（例如在家记录零食）。两种记录都可添加标签、地址和备注。
 3. 首页可按「全部 / 餐饮 / 物品」筛选。附近 5 公里只展示有坐标的餐饮；详情显示菜系或分类路径，创建者可以删除。
 4. 「AI 推荐」支持选择 1、5、10、20 公里范围。服务端仅查询 `kind=place` 且经纬度非空的附近餐饮，再调用 `${AI_BASE_URL}/chat/completions`。
@@ -129,6 +130,6 @@ npm start
 
 ## 验证状态与文档
 
-单元与接口测试还覆盖 entries 类型校验、叶子分类校验、关联失败清理、匿名请求、物品所有权和旧 foods 接口的餐饮限制。基础测试覆盖距离计算、整数评分和多选校验、验证码存储与消费、会话签名、匿名请求与所有权限制、AI 配置与错误、未知 ID 过滤和无样本不调用 AI。Chromium 移动视口冒烟验证使用模拟 API，覆盖无地点物品登记及详情、带坐标和菜系的餐饮登记、三种首页筛选与附近餐饮/推荐展示；未发现浏览器运行时错误。未使用真实 Supabase 项目或真实 AI 凭据进行外部服务联调；部署后按上面的步骤完成验证。
+单元与接口测试还覆盖 entries 类型校验、叶子分类校验、关联失败清理、匿名请求、物品所有权和旧 foods 接口的餐饮限制。基础测试覆盖距离计算、半星评分和多选校验、验证码存储与消费、会话签名、匿名请求与所有权限制、AI 配置与错误、未知 ID 过滤和无样本不调用 AI。Chromium 移动视口冒烟验证使用模拟 API，覆盖无地点物品登记及详情、带坐标和菜系的餐饮登记、三种首页筛选与附近餐饮/推荐展示；未发现浏览器运行时错误。未使用真实 Supabase 项目或真实 AI 凭据进行外部服务联调；部署后按上面的步骤完成验证。
 
 本轮按 [Entries 设计说明](docs/superpowers/specs/2026-10-28-entries-items-design.md) 与 [六项实施计划](docs/superpowers/plans/2026-10-28-entries-items.md) 实现；保留原有 [基础设计](docs/superpowers/specs/2026-10-28-food-platform-design.md)。用户名密码登录见 [设计说明](docs/superpowers/specs/2026-10-29-username-password-auth-design.md) 与 [实施计划](docs/superpowers/plans/2026-10-29-username-password-auth.md)。地图足迹、真实短信与物品 AI 推荐不在本轮范围内。

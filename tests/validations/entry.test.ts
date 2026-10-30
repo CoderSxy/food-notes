@@ -20,8 +20,13 @@ describe('entryCreateSchema', () => {
     expect(entryCreateSchema.parse({ ...item, cuisineIds: [id] })).not.toHaveProperty('cuisineIds');
     expect(entryCreateSchema.parse({ ...place, categoryIds: [id] })).not.toHaveProperty('categoryIds');
   });
-  it.each([0, 6, 2.5])('rejects invalid rating %s', rating => {
+  it.each([1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5])('accepts whole and half-star rating %s for both kinds', rating => {
+    expect(entryCreateSchema.parse({ ...item, rating }).rating).toBe(rating);
+    expect(entryCreateSchema.parse({ ...place, rating }).rating).toBe(rating);
+  });
+  it.each([0, 0.5, 5.5, 6, 1.25, 4.75, NaN, Infinity, -Infinity])('rejects invalid rating %s', rating => {
     expect(entryCreateSchema.safeParse({ ...item, rating }).success).toBe(false);
+    expect(entryCreateSchema.safeParse({ ...place, rating }).success).toBe(false);
   });
   it('rejects invalid kinds, UUIDs and coordinates', () => {
     expect(entryKindSchema.safeParse('food').success).toBe(false);
