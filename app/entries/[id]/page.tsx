@@ -28,7 +28,8 @@ export default function Detail({ params }: { params: Promise<{ id: string }> }) 
       <div>{entry.kind === 'place' ? entry.cuisines.map(c => <span className="pill" key={c.id}>{c.name}</span>) : entry.categories.map(c => <span className="pill" key={c.id}>{c.parent ? `${c.parent.name} / ` : ''}{c.name}</span>)}
         {entry.tags.map(t => <span className="pill" key={t.id}>#{t.name}</span>)}</div>
       <p className="note">{entry.note || '暂时没有备注'}</p>
-      <p className="muted">记录于 {new Date(entry.created_at).toLocaleDateString('zh-CN')}</p>
+      {/* Use the UTC calendar date so rendering never depends on the host timezone or locale. */}
+      <p className="muted">记录于 <time dateTime={entry.created_at}>{new Date(entry.created_at).toISOString().slice(0, 10)}</time></p>
       {entry.user_id === userId && <button className="danger" disabled={busy} onClick={() => void remove()}>{busy ? '正在删除…' : '删除我的记录'}</button>}
     </article> : !error && <p>正在加载记录…</p>}
   </section>;
