@@ -10,7 +10,10 @@ import CategoryPicker from "./CategoryPicker";
 import TagPicker from "./TagPicker";
 import StarRating from "./StarRating";
 import LocationField from "./LocationField";
-import PhotoPicker, { type PickerPhoto } from "./PhotoPicker";
+import PhotoPicker, {
+  revokePickerPreviews,
+  type PickerPhoto,
+} from "./PhotoPicker";
 export default function EntryForm() {
   const router = useRouter();
   const [kind, setKind] = useState<"place" | "item">("place");
@@ -83,6 +86,7 @@ export default function EntryForm() {
           photoFailed = true;
         }
       }
+      revokePickerPreviews(photos);
       const from = safeNext(
         new URLSearchParams(window.location.search).get("from") ||
           "/entries?scope=mine",

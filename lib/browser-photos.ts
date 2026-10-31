@@ -84,6 +84,7 @@ export async function uploadEntryPhoto(
   );
   const put = await fetch(presign.uploadUrl, {
     method: "PUT",
+    // Same blob reported as `bytes` at presign; signed ContentLength must match.
     body: compressed.blob,
     headers: presign.headers ?? { "Content-Type": compressed.contentType },
   });

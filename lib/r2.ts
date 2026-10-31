@@ -76,15 +76,18 @@ export function publicUrlForKey(key: string): string {
 export async function presignPutObject(
   key: string,
   contentType: string,
+  contentLength: number,
   expiresIn = 300,
 ): Promise<string> {
   const { client, cfg } = getClient();
+  // ContentLength is signed into the URL so a larger PUT body is rejected.
   return getSignedUrl(
     client,
     new PutObjectCommand({
       Bucket: cfg.bucket,
       Key: key,
       ContentType: contentType,
+      ContentLength: contentLength,
     }),
     { expiresIn },
   );

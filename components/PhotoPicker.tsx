@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MAX_PHOTOS } from "@/lib/photo-constants";
 
 export type PickerPhoto = {
@@ -8,6 +8,14 @@ export type PickerPhoto = {
   file?: File;
   sort: number;
 };
+
+export function revokePickerPreviews(photos: PickerPhoto[]) {
+  for (const photo of photos) {
+    if (photo.previewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(photo.previewUrl);
+    }
+  }
+}
 
 export default function PhotoPicker({
   value,
@@ -24,9 +32,28 @@ export default function PhotoPicker({
 }) {
   const albumRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
+  const blobUrls = useRef(new Set<string>());
   const [hint, setHint] = useState("");
   const full = value.length >= MAX_PHOTOS;
   const blocked = disabled || !storageReady || full;
+
+  useEffect(() => {
+    const next = new Set(
+      value
+        .filter((photo) => photo.previewUrl.startsWith("blob:"))
+        .map((photo) => photo.previewUrl),
+    );
+    for (const url of blobUrls.current) {
+      if (!next.has(url)) URL.revokeObjectURL(url);
+    }
+    blobUrls.current = next;
+  }, [value]);
+  useEffect(
+    () => () => {
+      for (const url of blobUrls.current) URL.revokeObjectURL(url);
+    },
+    [],
+  );
 
   function addFiles(files: FileList | File[] | null) {
     if (!files?.length) return;

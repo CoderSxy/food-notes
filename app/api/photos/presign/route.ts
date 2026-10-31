@@ -24,7 +24,11 @@ export async function POST(req: Request) {
       body.contentType,
     );
     const publicUrl = publicUrlForKey(r2Key);
-    const uploadUrl = await presignPutObject(r2Key, body.contentType);
+    const uploadUrl = await presignPutObject(
+      r2Key,
+      body.contentType,
+      body.bytes,
+    );
     return privateJson({
       uploadUrl,
       r2Key,

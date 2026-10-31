@@ -18,7 +18,7 @@ export const photoPresignSchema = z.object({
 export const photoConfirmSchema = photoPresignSchema.extend({
   photoId: z.uuid(),
   r2Key: z.string().trim().min(1).max(500),
-  publicUrl: z.string().trim().min(1).max(2000),
+  publicUrl: z.string().trim().min(1).max(2000).optional(),
   sort: z.number().int().min(0).max(2),
 });
 

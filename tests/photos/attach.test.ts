@@ -101,6 +101,22 @@ it("attaches cover urls and optional full photo lists", async () => {
   expect(db.queries[0]?.ops).toContainEqual(["in", "entry_id", ["a", "b"]]);
 });
 
+it("chunks photo lookups so map pages do not overflow the filter URL", async () => {
+  const ids = Array.from({ length: 250 }, (_, i) => `id-${i}`);
+  db.results.push(
+    { data: [], error: null },
+    { data: [], error: null },
+    { data: [], error: null },
+  );
+  await attachCoverUrls(ids.map((id) => ({ id })));
+  expect(db.queries).toHaveLength(3);
+  const chunkSizes = db.queries.map((query) => {
+    const op = query.ops.find((item) => item[0] === "in");
+    return Array.isArray(op?.[2]) ? op[2].length : 0;
+  });
+  expect(chunkSizes).toEqual([100, 100, 50]);
+});
+
 it("adds cover_photo_url to map points", async () => {
   db.results.push({
     data: [

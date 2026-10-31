@@ -7,7 +7,10 @@ import {
   nextPhotoSort,
   type EntryPhoto,
 } from "@/lib/photo-constants";
-import PhotoPicker, { type PickerPhoto } from "./PhotoPicker";
+import PhotoPicker, {
+  revokePickerPreviews,
+  type PickerPhoto,
+} from "./PhotoPicker";
 
 export default function EntryPhotos({
   entryId,
@@ -45,6 +48,7 @@ export default function EntryPhotos({
   async function addPending(next: PickerPhoto[]) {
     const files = next.filter((photo) => photo.file).map((photo) => photo.file!);
     if (!files.length) return;
+    revokePickerPreviews(next);
     setBusy(true);
     setError("");
     let current = photos;

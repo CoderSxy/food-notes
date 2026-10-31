@@ -74,17 +74,25 @@ export async function listPhotos(entryId: string): Promise<EntryPhoto[]> {
   return (data ?? []) as EntryPhoto[];
 }
 
+export const PHOTO_ENTRY_ID_CHUNK = 100;
+
 export async function listPhotosForEntries(
   entryIds: string[],
 ): Promise<EntryPhoto[]> {
   if (!entryIds.length) return [];
-  const { data, error } = await createAdminClient()
-    .from("entry_photos")
-    .select(PHOTO_SELECT)
-    .in("entry_id", entryIds)
-    .order("sort", { ascending: true });
-  if (error) throw error;
-  return (data ?? []) as EntryPhoto[];
+  const unique = [...new Set(entryIds)];
+  const photos: EntryPhoto[] = [];
+  for (let i = 0; i < unique.length; i += PHOTO_ENTRY_ID_CHUNK) {
+    const chunk = unique.slice(i, i + PHOTO_ENTRY_ID_CHUNK);
+    const { data, error } = await createAdminClient()
+      .from("entry_photos")
+      .select(PHOTO_SELECT)
+      .in("entry_id", chunk)
+      .order("sort", { ascending: true });
+    if (error) throw error;
+    photos.push(...((data ?? []) as EntryPhoto[]));
+  }
+  return photos;
 }
 
 export async function getPhoto(id: string): Promise<EntryPhoto | null> {

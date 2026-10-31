@@ -7,7 +7,7 @@ import {
   insertPhoto,
   MAX_PHOTOS,
 } from "@/lib/photos";
-import { isR2Configured } from "@/lib/r2";
+import { isR2Configured, publicUrlForKey } from "@/lib/r2";
 import { photoConfirmSchema } from "@/lib/validations/photo";
 
 export async function POST(req: Request) {
@@ -20,6 +20,7 @@ export async function POST(req: Request) {
     if (entry.user_id !== user.userId)
       throw new HttpError("只能为自己的记录添加照片", 403);
     assertKeyOwned(user.userId, entry.id, body.photoId, body.r2Key);
+    const publicUrl = publicUrlForKey(body.r2Key);
     if ((await countPhotos(entry.id)) >= MAX_PHOTOS)
       throw new HttpError("最多 3 张照片", 400);
     const photo = await insertPhoto({
@@ -27,7 +28,7 @@ export async function POST(req: Request) {
       entry_id: entry.id,
       user_id: user.userId,
       r2_key: body.r2Key,
-      public_url: body.publicUrl,
+      public_url: publicUrl,
       sort: body.sort,
       width: body.width ?? null,
       height: body.height ?? null,

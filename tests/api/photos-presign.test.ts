@@ -153,6 +153,11 @@ describe("photo APIs", () => {
       photoId,
       headers: { "Content-Type": "image/webp" },
     });
+    expect(mocks.presignPutObject).toHaveBeenCalledWith(
+      `entries/${userId}/${entryId}/${photoId}.webp`,
+      "image/webp",
+      900_000,
+    );
   });
 
   it("rejects confirm when the key is not owned", async () => {
@@ -199,6 +204,54 @@ describe("photo APIs", () => {
         sort: 1,
       }),
     );
+  });
+
+  it("stores the server-derived public url even if the client sends another", async () => {
+    mocks.user = { userId };
+    const r2Key = `entries/${userId}/${entryId}/${photoId}.jpg`;
+    const derived = `https://cdn.example/${r2Key}`;
+    mocks.insertPhoto.mockImplementation(async (row) => row);
+    const response = await confirm(
+      req("photos/confirm", {
+        entryId,
+        photoId,
+        r2Key,
+        publicUrl: "https://evil.example/phish.webp",
+        sort: 0,
+        contentType: "image/jpeg",
+        bytes: 100,
+      }),
+    );
+    expect(response.status).toBe(200);
+    expect(mocks.publicUrlForKey).toHaveBeenCalledWith(r2Key);
+    expect(mocks.insertPhoto).toHaveBeenCalledWith(
+      expect.objectContaining({ public_url: derived }),
+    );
+    expect(mocks.insertPhoto).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        public_url: "https://evil.example/phish.webp",
+      }),
+    );
+  });
+
+  it("rejects confirm when the entry already has 3 photos", async () => {
+    mocks.user = { userId };
+    mocks.countPhotos.mockResolvedValue(3);
+    const r2Key = `entries/${userId}/${entryId}/${photoId}.webp`;
+    const response = await confirm(
+      req("photos/confirm", {
+        entryId,
+        photoId,
+        r2Key,
+        publicUrl: `https://cdn.example/${r2Key}`,
+        sort: 0,
+        contentType: "image/webp",
+        bytes: 100,
+      }),
+    );
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "最多 3 张照片" });
+    expect(mocks.insertPhoto).not.toHaveBeenCalled();
   });
 
   it("forbids deleting another user's photo", async () => {

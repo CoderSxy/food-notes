@@ -48,6 +48,17 @@ describe('photoConfirmSchema', () => {
     });
     expect(v.sort).toBe(0);
   });
+  it('allows confirm without a client publicUrl', () => {
+    const v = photoConfirmSchema.parse({
+      entryId,
+      photoId,
+      r2Key: 'entries/u/e/p.webp',
+      sort: 1,
+      contentType: 'image/webp',
+      bytes: 100,
+    });
+    expect(v.publicUrl).toBeUndefined();
+  });
   it('rejects sort outside 0-2', () => {
     expect(() =>
       photoConfirmSchema.parse({
