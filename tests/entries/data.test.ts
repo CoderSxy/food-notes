@@ -9,13 +9,17 @@ vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from(table:
   }
   return builder;
 } }) }));
-import { createEntry, nearbyPlaceEntries } from '@/lib/entries';
+import { createEntry, entrySelect, nearbyPlaceEntries } from '@/lib/entries';
 import { assertLeafCategoryIds } from '@/lib/categories';
 const id = '11111111-1111-4111-8111-111111111111';
 const item = { kind: 'item' as const, name: 'IPA', rating: 5, categoryIds: [id], tagNames: [] };
 const raw = { id: 'e', user_id: 'u', kind: 'place', name: '面馆', rating: 4, note: null, address_text: null, created_at: '', lat: 31, lng: 121, entry_cuisines: [], entry_categories: [], entry_tags: [] };
 beforeEach(() => { db.queries = []; db.results = []; });
 describe('entry data boundaries', () => {
+  it('embeds category parents by parent_id because PostgREST has no named self-FK', () => {
+    expect(entrySelect).toContain('parent:parent_id(name)');
+    expect(entrySelect).not.toContain('categories_parent_id_fkey');
+  });
   it.each([{ rows: [{ id, parent_id: null }] }, { rows: [] }])('rejects root or unknown category before creating an entry', async ({ rows }) => {
     db.results.push({ data: rows, error: null });
     await expect(createEntry('u', item)).rejects.toMatchObject({ status: 400 });
