@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { entryCreateSchema, entryKindSchema } from '@/lib/validations/entry';
+import { entryCreateSchema, entryKindSchema, type EntryCreate, type EntryUpdate } from '@/lib/validations/entry';
 const id = '11111111-1111-4111-8111-111111111111';
 const item = { kind: 'item', name: 'IPA', rating: 5, categoryIds: [id], tagNames: [] };
 const place = { kind: 'place', name: '面馆', rating: 4, lat: 31, lng: 121, cuisineIds: [], tagNames: [] };
@@ -33,5 +33,11 @@ describe('entryCreateSchema', () => {
     expect(entryCreateSchema.safeParse({ ...item, categoryIds: ['invalid'] }).success).toBe(false);
     expect(entryCreateSchema.safeParse({ ...item, lat: 91 }).success).toBe(false);
     expect(entryCreateSchema.safeParse({ ...place, lng: -181 }).success).toBe(false);
+  });
+  it('treats EntryUpdate as the create payload so kind stays in the same schema', () => {
+    const parsed: EntryUpdate = entryCreateSchema.parse(place);
+    const create: EntryCreate = parsed;
+    expect(create.kind).toBe('place');
+    expect(entryCreateSchema.safeParse({ ...place, kind: 'item', categoryIds: [id] }).success).toBe(true);
   });
 });

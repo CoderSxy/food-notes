@@ -1,11 +1,31 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-const mocks = vi.hoisted(() => ({ user: null as null | { userId: string }, get: vi.fn(), list: vi.fn(), page: vi.fn(), create: vi.fn(), nearby: vi.fn(), roots: vi.fn(), children: vi.fn(), admin: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  user: null as null | { userId: string },
+  get: vi.fn(),
+  list: vi.fn(),
+  page: vi.fn(),
+  create: vi.fn(),
+  update: vi.fn(),
+  nearby: vi.fn(),
+  roots: vi.fn(),
+  children: vi.fn(),
+  admin: vi.fn(),
+}));
 vi.mock('@/lib/auth/requestUser', () => ({ requireUser: async () => { if (!mocks.user) { const { HttpError } = await import('@/lib/http'); throw new HttpError('请先登录', 401); } return mocks.user; } }));
-vi.mock('@/lib/entries', () => ({ getEntry: mocks.get, listEntries: mocks.list, listEntryPage:mocks.page, createEntry: mocks.create, nearbyPlaceEntries: mocks.nearby, isPlaceEntry: (e: {kind: string; lat: number | null; lng: number | null}) => e.kind === 'place' && e.lat !== null && e.lng !== null }));
+vi.mock('@/lib/entries', () => ({
+  getEntry: mocks.get,
+  listEntries: mocks.list,
+  listEntryPage: mocks.page,
+  createEntry: mocks.create,
+  updateEntry: mocks.update,
+  nearbyPlaceEntries: mocks.nearby,
+  isPlaceEntry: (e: { kind: string; lat: number | null; lng: number | null }) =>
+    e.kind === 'place' && e.lat !== null && e.lng !== null,
+}));
 vi.mock('@/lib/categories', () => ({ listRootCategories: mocks.roots, listChildCategories: mocks.children }));
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: mocks.admin }));
 import { GET, POST } from '@/app/api/entries/route';
-import { GET as detail, DELETE } from '@/app/api/entries/[id]/route';
+import { GET as detail, DELETE, PUT } from '@/app/api/entries/[id]/route';
 import { GET as categories } from '@/app/api/categories/route';
 import { GET as nearby } from '@/app/api/entries/nearby/route';
 import { GET as oldDetail, DELETE as oldDelete } from '@/app/api/foods/[id]/route';
@@ -74,5 +94,59 @@ describe('entries APIs', () => {
     expect(mocks.list).toHaveBeenCalledWith({ kind: 'place' }, 100);
     expect((await oldCreate(req('foods', { kind: 'item', name: 'IPA', rating: 5, lat: 31, lng: 121, cuisineIds: [], tagNames: [], categoryIds: [id] }))).status).toBe(400);
     expect(mocks.create).not.toHaveBeenCalled();
+  });
+
+  const put = (body: unknown) =>
+    new Request(`http://localhost/api/entries/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+  it('requires auth for PUT before DB', async () => {
+    expect((await PUT(put({ kind: 'place', name: '面馆', rating: 4, lat: 31, lng: 121, cuisineIds: [], tagNames: [] }), { params: Promise.resolve({ id }) })).status).toBe(401);
+    expect(mocks.update).not.toHaveBeenCalled();
+  });
+
+  it('forbids editing another user entry', async () => {
+    mocks.user = { userId: 'u' };
+    mocks.get.mockResolvedValue({ id, kind: 'place', user_id: 'other' });
+    expect((await PUT(put({ kind: 'place', name: '面馆', rating: 4, lat: 31, lng: 121, cuisineIds: [], tagNames: [] }), { params: Promise.resolve({ id }) })).status).toBe(403);
+    expect(mocks.update).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 when the entry is missing', async () => {
+    mocks.user = { userId: 'u' };
+    mocks.get.mockResolvedValue(null);
+    expect((await PUT(put({ kind: 'place', name: '面馆', rating: 4, lat: 31, lng: 121, cuisineIds: [], tagNames: [] }), { params: Promise.resolve({ id }) })).status).toBe(404);
+  });
+
+  it('rejects a kind change with a Chinese 400', async () => {
+    mocks.user = { userId: 'u' };
+    mocks.get.mockResolvedValue({ id, kind: 'place', user_id: 'u' });
+    const response = await PUT(
+      put({ kind: 'item', name: 'IPA', rating: 5, categoryIds: [id], tagNames: [] }),
+      { params: Promise.resolve({ id }) },
+    );
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: '不能更改记录类型' });
+    expect(mocks.update).not.toHaveBeenCalled();
+  });
+
+  it('fills omitted kind from the stored entry and updates', async () => {
+    mocks.user = { userId: 'u' };
+    mocks.get.mockResolvedValue({ id, kind: 'place', user_id: 'u' });
+    mocks.update.mockResolvedValue({ id, kind: 'place', name: '新面馆' });
+    const response = await PUT(
+      put({ name: '新面馆', rating: 5, lat: 31, lng: 121, cuisineIds: [], tagNames: [] }),
+      { params: Promise.resolve({ id }) },
+    );
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ entry: { id, kind: 'place', name: '新面馆' } });
+    expect(mocks.update).toHaveBeenCalledWith(
+      'u',
+      id,
+      expect.objectContaining({ kind: 'place', name: '新面馆', rating: 5 }),
+    );
   });
 });

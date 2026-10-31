@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { haversineKm, type LatLng } from "@/lib/geo/haversine";
 import { assertLeafCategoryIds, type Category } from "@/lib/categories";
+import { HttpError } from "@/lib/http";
 import type { EntryCreate } from "@/lib/validations/entry";
 import {
   coverUrlFromPhotos,
@@ -229,6 +230,92 @@ export async function createEntry(userId: string, parsed: EntryCreate) {
     if (cleanupError) throw cleanupError;
     throw error;
   }
+}
+
+export async function updateEntry(
+  userId: string,
+  id: string,
+  parsed: EntryCreate,
+) {
+  const existing = await getEntry(id);
+  if (!existing) throw new HttpError("记录不存在", 404);
+  if (existing.user_id !== userId)
+    throw new HttpError("只能编辑自己的记录", 403);
+  if (existing.kind !== parsed.kind)
+    throw new HttpError("不能更改记录类型", 400);
+  if (parsed.kind === "item") await assertLeafCategoryIds(parsed.categoryIds);
+
+  const admin = createAdminClient();
+  const fields =
+    parsed.kind === "place"
+      ? {
+          name: parsed.name,
+          note: parsed.note ?? null,
+          rating: parsed.rating,
+          lat: parsed.lat,
+          lng: parsed.lng,
+          address_text: parsed.address_text ?? null,
+          updated_at: new Date().toISOString(),
+        }
+      : {
+          name: parsed.name,
+          note: parsed.note ?? null,
+          rating: parsed.rating,
+          lat: parsed.lat ?? null,
+          lng: parsed.lng ?? null,
+          address_text: parsed.address_text ?? null,
+          updated_at: new Date().toISOString(),
+        };
+
+  const { error } = await admin
+    .from("entries")
+    .update(fields)
+    .eq("id", id)
+    .eq("user_id", userId);
+  if (error) throw error;
+
+  for (const table of [
+    "entry_cuisines",
+    "entry_categories",
+    "entry_tags",
+  ] as const) {
+    const { error: wipe } = await admin.from(table).delete().eq("entry_id", id);
+    if (wipe) throw wipe;
+  }
+
+  if (parsed.kind === "place" && parsed.cuisineIds.length) {
+    const { error: join } = await admin.from("entry_cuisines").insert(
+      parsed.cuisineIds.map((cuisine_id) => ({ entry_id: id, cuisine_id })),
+    );
+    if (join) throw join;
+  }
+  if (parsed.kind === "item") {
+    const { error: join } = await admin.from("entry_categories").insert(
+      parsed.categoryIds.map((category_id) => ({
+        entry_id: id,
+        category_id,
+      })),
+    );
+    if (join) throw join;
+  }
+  if (parsed.tagNames.length) {
+    const { data: tags, error: tagError } = await admin
+      .from("tags")
+      .upsert(
+        parsed.tagNames.map((name) => ({ name })),
+        { onConflict: "name" },
+      )
+      .select("id");
+    if (tagError) throw tagError;
+    const { error: joinError } = await admin
+      .from("entry_tags")
+      .insert(tags.map((tag) => ({ entry_id: id, tag_id: tag.id })));
+    if (joinError) throw joinError;
+  }
+
+  const updated = await getEntry(id);
+  if (!updated) throw new HttpError("记录不存在", 404);
+  return updated;
 }
 
 // Dashboard queries are independent of the legacy latest-100 list.
