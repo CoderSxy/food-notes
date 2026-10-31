@@ -97,3 +97,20 @@ it('omits the mini-map when the entry has no coordinates', async () => {
   await screen.findByText('未记录地点');
   expect(screen.queryByTestId('entry-mini-map')).toBeNull();
 });
+
+it('links the owner to the edit page', async () => {
+  vi.stubGlobal('fetch', async (url: string) => Response.json(
+    String(url).includes('/api/auth/me')
+      ? { user: { userId: 'user' } }
+      : String(url).includes('/api/photos/status')
+        ? { configured: true }
+        : { entry },
+  ));
+  const params = Promise.resolve({ id: 'entry' });
+  await act(async () => {
+    render(createElement(Suspense, { fallback: '加载中' }, createElement(Detail, { params })));
+  });
+  const edit = await screen.findByRole('link', { name: '编辑' });
+  expect(edit.getAttribute('href')).toMatch(/^\/entries\/entry\/edit\?from=/);
+  expect(screen.getByRole('button', { name: '删除我的记录' })).toBeTruthy();
+});
