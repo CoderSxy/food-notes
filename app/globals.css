@@ -1277,6 +1277,11 @@ input[type="range"] {
 .entry-cover-dot[aria-current="true"] {
   background: var(--terracotta);
 }
+.entry-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
 .photo-gallery {
   margin: 16px 0 8px;
 }
