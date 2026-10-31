@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-const mocks = vi.hoisted(() => ({ user: null as null | { userId: string }, get: vi.fn(), list: vi.fn(), create: vi.fn(), nearby: vi.fn(), roots: vi.fn(), children: vi.fn(), admin: vi.fn() }));
+const mocks = vi.hoisted(() => ({ user: null as null | { userId: string }, get: vi.fn(), list: vi.fn(), page: vi.fn(), create: vi.fn(), nearby: vi.fn(), roots: vi.fn(), children: vi.fn(), admin: vi.fn() }));
 vi.mock('@/lib/auth/requestUser', () => ({ requireUser: async () => { if (!mocks.user) { const { HttpError } = await import('@/lib/http'); throw new HttpError('请先登录', 401); } return mocks.user; } }));
-vi.mock('@/lib/entries', () => ({ getEntry: mocks.get, listEntries: mocks.list, createEntry: mocks.create, nearbyPlaceEntries: mocks.nearby, isPlaceEntry: (e: {kind: string; lat: number | null; lng: number | null}) => e.kind === 'place' && e.lat !== null && e.lng !== null }));
+vi.mock('@/lib/entries', () => ({ getEntry: mocks.get, listEntries: mocks.list, listEntryPage:mocks.page, createEntry: mocks.create, nearbyPlaceEntries: mocks.nearby, isPlaceEntry: (e: {kind: string; lat: number | null; lng: number | null}) => e.kind === 'place' && e.lat !== null && e.lng !== null }));
 vi.mock('@/lib/categories', () => ({ listRootCategories: mocks.roots, listChildCategories: mocks.children }));
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: mocks.admin }));
 import { GET, POST } from '@/app/api/entries/route';
@@ -19,11 +19,11 @@ describe('entries APIs', () => {
     expect(mocks.admin).not.toHaveBeenCalled(); expect(mocks.list).not.toHaveBeenCalled(); expect(mocks.roots).not.toHaveBeenCalled();
   });
   it('validates the kind filter and returns item records', async () => {
-    mocks.user = { userId: 'u' }; mocks.list.mockResolvedValue([{ id, kind: 'item' }]);
+    mocks.user = { userId: 'u' }; mocks.page.mockResolvedValue({entries:[{id,kind:'item'}],total:1,page:1,pageSize:20});
     expect((await GET(req('entries?kind=nope'))).status).toBe(400);
     const response = await GET(req('entries?kind=item'));
-    expect(await response.json()).toEqual({ entries: [{ id, kind: 'item' }] });
-    expect(mocks.list).toHaveBeenCalledWith({ kind: 'item' });
+    expect(await response.json()).toEqual({entries:[{id,kind:'item'}],total:1,page:1,pageSize:20});
+    expect(mocks.page).toHaveBeenCalledWith('u',{scope:'mine',kind:'item',q:'',page:1,pageSize:20});
   });
   it('creates an item without coordinates', async () => {
     mocks.user = { userId: 'u' }; mocks.create.mockResolvedValue({ id, kind: 'item' });
@@ -66,7 +66,7 @@ describe('entries APIs', () => {
   it('nearby delegates only to the coordinate-bearing place query', async () => {
     mocks.user = { userId: 'u' }; mocks.nearby.mockResolvedValue([{ id, kind: 'place' }]);
     expect(await (await nearby(req('entries/nearby?lat=31&lng=121'))).json()).toEqual({ entries: [{ id, kind: 'place' }] });
-    expect(mocks.nearby).toHaveBeenCalledWith({ lat: 31, lng: 121, radiusKm: 5 }, 5);
+    expect(mocks.nearby).toHaveBeenCalledWith({ lat: 31, lng: 121, radiusKm: 5 }, 5, undefined);
   });
   it('legacy foods list ignores item filters and creation rejects explicit items', async () => {
     mocks.user = { userId: 'u' }; mocks.list.mockResolvedValue([]);

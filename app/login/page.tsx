@@ -1,37 +1,41 @@
-'use client';
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { requestJson, jsonBody } from '@/lib/browser';
+"use client";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { requestJson, jsonBody } from "@/lib/browser";
+import { useAuth } from "@/lib/auth/context";
+import { safeNext } from "@/lib/auth/redirect";
 
-type Mode = 'password' | 'otp';
+type Mode = "password" | "otp";
 
 export default function Login() {
   const router = useRouter();
-  const [mode, setMode] = useState<Mode>('password');
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [phone, setPhone] = useState('');
-  const [code, setCode] = useState('');
-  const [message, setMessage] = useState('');
+  const [mode, setMode] = useState<Mode>("password");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
+  const [code, setCode] = useState("");
+  const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
-  const [signedIn, setSignedIn] = useState(false);
+  const { status, error, retry, login } = useAuth();
+  const signedIn = status === "signed-in";
 
   useEffect(() => {
-    fetch('/api/auth/me')
-      .then((r) => {
-        if (r.ok) setSignedIn(true);
-      })
-      .catch(() => {});
-  }, []);
+    if (signedIn)
+      router.replace(
+        safeNext(new URLSearchParams(window.location.search).get("next")),
+      );
+  }, [signedIn, router]);
 
   async function loginPassword(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    setMessage('');
+    setMessage("");
     try {
-      await requestJson('/api/auth/login', jsonBody({ username, password }));
-      router.push('/');
-      router.refresh();
+      const data = await requestJson<{ accessToken: string }>(
+        "/api/auth/login",
+        jsonBody({ username, password }),
+      );
+      await login(data.accessToken);
     } catch (err) {
       setMessage((err as Error).message);
     } finally {
@@ -41,13 +45,15 @@ export default function Login() {
 
   async function otpAction(send: boolean) {
     setBusy(true);
-    setMessage('');
+    setMessage("");
     try {
-      await requestJson(`/api/auth/${send ? 'send-otp' : 'verify-otp'}`, jsonBody({ phone, code }));
-      if (send) setMessage('验证码已发送，请查看服务端日志');
+      const data = await requestJson<{ accessToken?: string }>(
+        `/api/auth/${send ? "send-otp" : "verify-otp"}`,
+        jsonBody({ phone, code }),
+      );
+      if (send) setMessage("验证码已发送，请查看服务端日志");
       else {
-        router.push('/');
-        router.refresh();
+        if (data.accessToken) await login(data.accessToken);
       }
     } catch (err) {
       setMessage((err as Error).message);
@@ -58,32 +64,38 @@ export default function Login() {
 
   return (
     <section className="panel narrow login-card">
-      <h1>登录美食地图</h1>
-      {signedIn ? (
+      <h1>欢迎回来</h1>
+      <p className="muted login-intro">登录后查看你的记录与地图</p>
+      {status === "loading" || signedIn ? (
+        <p role="status">正在验证登录状态…</p>
+      ) : status === "error" ? (
         <>
-          <p>你已登录，可以继续记录美食。</p>
-          <button
-            className="secondary"
-            onClick={async () => {
-              await requestJson('/api/auth/logout', jsonBody({}));
-              setSignedIn(false);
-              setMessage('已退出登录');
-            }}
-          >
-            退出登录
-          </button>
+          <p role="alert" className="error">
+            {error}
+          </p>
+          <button onClick={() => void retry()}>重试验证</button>
         </>
       ) : (
         <>
           <div className="tabs" aria-label="登录方式">
-            <button type="button" className="tab" aria-pressed={mode === 'password'} onClick={() => setMode('password')}>
+            <button
+              type="button"
+              className="tab"
+              aria-pressed={mode === "password"}
+              onClick={() => setMode("password")}
+            >
               账号密码
             </button>
-            <button type="button" className="tab" aria-pressed={mode === 'otp'} onClick={() => setMode('otp')}>
+            <button
+              type="button"
+              className="tab"
+              aria-pressed={mode === "otp"}
+              onClick={() => setMode("otp")}
+            >
               手机验证码
             </button>
           </div>
-          {mode === 'password' ? (
+          {mode === "password" ? (
             <form onSubmit={loginPassword}>
               <label htmlFor="username">用户名</label>
               <input
@@ -113,7 +125,9 @@ export default function Login() {
                 void otpAction(false);
               }}
             >
-              <p className="muted">测试模式：验证码见服务端日志。验证码十分钟内有效。</p>
+              <p className="muted">
+                测试模式：验证码见服务端日志。验证码十分钟内有效。
+              </p>
               <label htmlFor="phone">手机号</label>
               <input
                 id="phone"
@@ -124,7 +138,12 @@ export default function Login() {
                 onChange={(e) => setPhone(e.target.value)}
               />
               <p>
-                <button type="button" className="secondary" disabled={busy || !phone} onClick={() => void otpAction(true)}>
+                <button
+                  type="button"
+                  className="secondary"
+                  disabled={busy || !phone}
+                  onClick={() => void otpAction(true)}
+                >
                   发送验证码
                 </button>
               </p>

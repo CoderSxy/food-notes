@@ -13,7 +13,7 @@ import Login from '@/app/login/page';
 import Recommend from '@/app/recommend/page';
 import CategoryPicker from '@/components/CategoryPicker';
 
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), replace:vi.fn() }), usePathname:()=>'/login', useSearchParams:()=>new URLSearchParams() }));
 vi.mock('next/dynamic', () => ({
   default: () => {
     const Stub = () => null;
@@ -21,14 +21,8 @@ vi.mock('next/dynamic', () => ({
     return Stub;
   },
 }));
-// Next's compiler supplies these static classes in production; Vite does not
-// transform next/font calls. The production build verifies the real font loader.
-vi.mock('next/font/google', () => ({
-  Noto_Sans_SC: () => ({ variable: 'noto-sans-variable' }),
-  ZCOOL_XiaoWei: () => ({ variable: 'xiaowei-variable' }),
-}));
 
-afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals();localStorage.clear(); });
 
 it.each([1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5])('hydrates a %s rating with stable half-star fills', async value => {
   const ui = createElement(StarRating, { value, onChange: () => {} });
@@ -87,7 +81,7 @@ it('hydrates stable document attributes without manually managed font links', as
   document.close();
   const serverMarkup = document.documentElement.outerHTML;
   expect(document.head.querySelector('link')).toBeNull();
-  expect(document.documentElement.className).toBe('noto-sans-variable xiaowei-variable');
+  expect(document.documentElement.className).toBe('');
   expect(document.body.attributes.length).toBe(0);
   const error = vi.spyOn(console, 'error');
   const recoverableError = vi.fn();
