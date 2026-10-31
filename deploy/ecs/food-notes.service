@@ -1,0 +1,29 @@
+[Unit]
+Description=Food Notes Next.js
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/opt/food-notes/current/.next/BUILD_ID
+
+[Service]
+Type=simple
+User=food-notes
+Group=food-notes
+WorkingDirectory=/opt/food-notes/current
+Environment=NODE_ENV=production
+Environment=PATH=/opt/node-v22.22.0/bin:/usr/local/bin:/usr/bin:/bin
+Environment=NODE_OPTIONS=--max-old-space-size=384
+EnvironmentFile=/etc/food-notes/food-notes.env
+ExecStart=/opt/node-v22.22.0/bin/node node_modules/next/dist/bin/next start --hostname 127.0.0.1 --port 3200
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/food-notes
+UMask=0027
+MemoryMax=640M
+
+[Install]
+WantedBy=multi-user.target
