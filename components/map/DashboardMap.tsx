@@ -132,6 +132,13 @@ function MapContent({
         >
           {group.points.length === 1 && (
             <Popup>
+              {group.points[0].cover_photo_url && (
+                <img
+                  className="map-cover"
+                  src={group.points[0].cover_photo_url}
+                  alt=""
+                />
+              )}
               <strong>{group.points[0].name}</strong>
               <p>
                 {group.points[0].kind === "place" ? "餐饮" : "物品"} ·{" "}
@@ -235,9 +242,17 @@ export default function DashboardMap({
                 key={point.id}
                 href={`/entries/${point.id}?from=${encodeURIComponent(source)}`}
               >
-                <span className={`category-icon ${point.kind}`}>
-                  <Icon name={point.kind === "place" ? "food" : "item"} />
-                </span>
+                {point.cover_photo_url ? (
+                  <img
+                    className="preview-cover"
+                    src={point.cover_photo_url}
+                    alt=""
+                  />
+                ) : (
+                  <span className={`category-icon ${point.kind}`}>
+                    <Icon name={point.kind === "place" ? "food" : "item"} />
+                  </span>
+                )}
                 <span>
                   <strong>{point.name}</strong>
                   <small>

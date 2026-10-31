@@ -25,7 +25,11 @@ it.each([
   ['2026-10-30T23:30:00-08:00', '2026-10-31'],
 ])('shows the UTC calendar date for %s after loading', async (created_at, expected) => {
   vi.stubGlobal('fetch', async (url: string) => Response.json(
-    url === '/api/auth/me' ? { user: { userId: 'user' } } : { entry: { ...entry, created_at } },
+    String(url).includes('/api/auth/me')
+      ? { user: { userId: 'user' } }
+      : String(url).includes('/api/photos/status')
+        ? { configured: true }
+        : { entry: { ...entry, created_at } },
   ));
   const params = Promise.resolve({ id: 'entry' });
   await act(async () => {
@@ -39,7 +43,11 @@ it.each([
 
 it('shows a mini-map when the entry has coordinates', async () => {
   vi.stubGlobal('fetch', async (url: string) => Response.json(
-    url === '/api/auth/me' ? { user: { userId: 'user' } } : { entry },
+    String(url).includes('/api/auth/me')
+      ? { user: { userId: 'user' } }
+      : String(url).includes('/api/photos/status')
+        ? { configured: true }
+        : { entry },
   ));
   const params = Promise.resolve({ id: 'entry' });
   await act(async () => {
@@ -48,11 +56,39 @@ it('shows a mini-map when the entry has coordinates', async () => {
   expect(await screen.findByTestId('entry-mini-map')).toBeTruthy();
 });
 
+it('shows the owner photo gallery when the entry has photos', async () => {
+  vi.stubGlobal('fetch', async (url: string) => Response.json(
+    String(url).includes('/api/auth/me')
+      ? { user: { userId: 'user' } }
+      : String(url).includes('/api/photos/status')
+        ? { configured: true }
+        : {
+            entry: {
+              ...entry,
+              photos: [{
+                id: 'p0', entry_id: 'entry', user_id: 'user', r2_key: 'k',
+                public_url: 'https://cdn.example/cover.webp', sort: 0,
+                width: null, height: null, bytes: null,
+                content_type: 'image/webp', created_at: entry.created_at,
+              }],
+            },
+          },
+  ));
+  const params = Promise.resolve({ id: 'entry' });
+  await act(async () => {
+    render(createElement(Suspense, { fallback: '加载中' }, createElement(Detail, { params })));
+  });
+  const image = await screen.findByAltText('封面照片');
+  expect(image.getAttribute('src')).toBe('https://cdn.example/cover.webp');
+});
+
 it('omits the mini-map when the entry has no coordinates', async () => {
   vi.stubGlobal('fetch', async (url: string) => Response.json(
-    url === '/api/auth/me'
+    String(url).includes('/api/auth/me')
       ? { user: { userId: 'user' } }
-      : { entry: { ...entry, lat: null, lng: null } },
+      : String(url).includes('/api/photos/status')
+        ? { configured: true }
+        : { entry: { ...entry, lat: null, lng: null } },
   ));
   const params = Promise.resolve({ id: 'entry' });
   await act(async () => {

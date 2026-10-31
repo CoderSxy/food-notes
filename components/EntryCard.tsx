@@ -15,6 +15,11 @@ export default function EntryCard({
       : "未记录地点");
   return (
     <article className="panel entry-card">
+      {entry.cover_photo_url && (
+        <div className="entry-cover">
+          <img src={entry.cover_photo_url} alt="" />
+        </div>
+      )}
       <div className="row between">
         <h2>
           <Link
