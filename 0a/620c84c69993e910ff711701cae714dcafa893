@@ -1,0 +1,32 @@
+deploy/ecs/food-notes-http.conf
+  s_b5df481452cbb6::t_e57f9165509cf2 1-17
+deploy/ecs/HANDOFF.md
+  s_b5df481452cbb6::t_fd24e10bb200ac 1-14,16-23,25-26,28,30,32,34,36,41-42,44-46,48-60
+  s_b5df481452cbb6::t_6789118797cf8b 37,39-40,47
+  s_b5df481452cbb6::t_4ab29c39abc677 27,35,61-63
+  s_b5df481452cbb6::t_39ea371b66c866 15,24,29,31,33,38,43
+deploy/ecs/food-notes.service
+  s_b5df481452cbb6::t_e57f9165509cf2 1-29
+deploy/ecs/food-notes-https.conf
+  s_b5df481452cbb6::t_e57f9165509cf2 1-32
+deploy/ecs/food-notes-maintenance.conf
+  s_b5df481452cbb6::t_e57f9165509cf2 1-5
+deploy/ecs/food-notes-proxy.conf
+  s_b5df481452cbb6::t_e57f9165509cf2 1-13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0a620c84c69993e910ff711701cae714dcafa893",
+  "prompts": {},
+  "sessions": {
+    "s_b5df481452cbb6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18b89-596a-7591-a74c-f4f4622d15fb",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
