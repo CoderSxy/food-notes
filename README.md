@@ -35,7 +35,8 @@ npm start
 5. 执行 [seed_categories.sql](supabase/seed_categories.sql)，初始化物品大类与小类；种子可重复执行。
 6. 执行 [003_username_password.sql](supabase/migrations/003_username_password.sql) 一次，使 `phone` 可空并添加 `username`、`password_hash` 列。
 7. 执行 [004_half_star_ratings.sql](supabase/migrations/004_half_star_ratings.sql) 一次，将评分改为支持 0.5 分递增的数值类型，保留已有整数评分。
-8. 从项目设置复制项目 URL、anon key 和 service role key 到本地环境变量或 Vercel 环境变量。
+8. 执行 [006_entry_photos.sql](supabase/migrations/006_entry_photos.sql) 一次，新增可选的 `entry_photos` 表（每条记录最多 3 张，级联删除）。未配置 R2 时登记仍可无图保存。
+9. 从项目设置复制项目 URL、anon key 和 service role key 到本地环境变量或 Vercel 环境变量。若启用照片，再填写 Cloudflare R2 变量（见下表），切勿提交真实密钥。
 
 本地「记一笔」保存失败时，运行 `npm run check:setup`（Node.js 20.19+）。脚本读取 `.env.local`（进程环境变量优先），只读检查 service_role JWT 角色、`public.entries` 及 `kind/rating/lat/lng`、半星查询、用户名密码列、账号数和菜系数；失败时退出码非零，并给出 002/003/004 迁移、种子及密钥的中文排查清单。JWT 仅解码，后续请求才验证访问；基础检查不覆盖全部约束和实际保存，请勿盲目重复执行迁移。开发环境接口显示脱敏后的数据库代码与消息，完整原始错误见服务端日志；生产环境未知错误保持通用提示。脚本不打印密钥、不写入数据，请勿提交 `.env.local` 或密钥。
 
@@ -65,6 +66,12 @@ npm start
 | `AI_API_KEY` | 自备，仅服务端；未配置时推荐提示错误，登录与美食功能仍可用 |
 | `AI_MODEL` | 默认 `deepseek-v4.1-flash` |
 | `OTP_TEST_MODE` | 保持 `true`；`false` 会拒绝发送，因为尚未接入短信服务商 |
+| `R2_ACCOUNT_ID` | Cloudflare 账户 ID；未配置时照片上传不可用，文字登记不受影响 |
+| `R2_ACCESS_KEY_ID` | R2 API Token 的 Access Key ID，仅服务端 |
+| `R2_SECRET_ACCESS_KEY` | R2 API Token 的 Secret Access Key，仅服务端，禁止提交 |
+| `R2_BUCKET` | 公开读或自定义域名的桶名 |
+| `R2_PUBLIC_BASE_URL` | 浏览器可读的公开前缀，例如 `https://img.example.com` |
+| `R2_ENDPOINT` | 可选；默认 `https://{accountId}.r2.cloudflarestorage.com` |
 
 `.env.example` 只包含空密钥和非敏感默认值。`.env`、`.env.local`、其他 `.env*` 与 `.vercel` 均已忽略，只有 `.env.example` 可提交。
 
@@ -95,7 +102,7 @@ npm start
 ## 使用与 AI 行为
 
 1. 登录后点击「记一笔」，选择「餐饮店」或「物品」，填写名称和半星评分（1–5 分，0.5 分递增）。
-2. 餐饮选择菜系并填写经纬度；物品先选大类，再多选小类，地点可以留空（例如在家记录零食）。两种记录都可添加标签、地址和备注。
+2. 餐饮选择菜系并填写经纬度；物品先选大类，再多选小类，地点可以留空（例如在家记录零食）。两种记录都可添加标签、地址、备注和最多 3 张可选照片（相册、拍照或粘贴截图；浏览器压缩后直传 R2）。未配置图片存储时仍可保存文字记录。
 3. 首页地图可按「全部 / 餐饮 / 物品」筛选；记录页支持范围、类型、名称搜索及每页 20 条分页。附近 5 公里只展示有坐标的餐饮；详情显示菜系或分类路径，创建者可以删除。
 4. 「AI 推荐」支持选择 1、5、10、20 公里范围。服务端仅查询 `kind=place` 且经纬度非空的附近餐饮，再调用 `${AI_BASE_URL}/chat/completions`。
 
@@ -109,12 +116,16 @@ npm start
 
 | 接口 | 返回 / 行为 |
 | --- | --- |
-| `GET /api/entries?scope=mine\|all&kind=place\|item&q=名称&page=1&pageSize=20` | `{ entries, total, page, pageSize }`；默认 mine，类型省略为全部，pageSize 上限 100，非法参数返回 400 |
+| `GET /api/entries?scope=mine\|all&kind=place\|item&q=名称&page=1&pageSize=20` | `{ entries, total, page, pageSize }`；默认 mine，类型省略为全部，pageSize 上限 100，非法参数返回 400；条目可含 `cover_photo_url` |
 | `GET /api/dashboard/summary?scope=mine\|all` | 当前范围的餐饮、物品、各类型有位置记录精确计数 |
-| `GET /api/entries/map?scope=mine\|all&kind=all\|place\|item&cursor=...` | `{ points, nextCursor, hasMore }`，每批最多 500 个轻量点位，稳定游标分页 |
+| `GET /api/entries/map?scope=mine\|all&kind=all\|place\|item&cursor=...` | `{ points, nextCursor, hasMore }`，每批最多 500 个轻量点位，稳定游标分页；点位可含 `cover_photo_url` |
 | `POST /api/entries` | `{ entry }`，201；公共字段 `kind/name/rating/tagNames`，餐饮另传 `lat/lng/cuisineIds`，物品另传非空 `categoryIds`（UUID 数组），`lat/lng` 可省略；地址和备注选填 |
-| `GET /api/entries/[id]` | `{ entry }`，含菜系、小类及其父类名称、标签；无记录返回 404 |
-| `DELETE /api/entries/[id]` | `{ ok: true }`；非本人返回 403 |
+| `GET /api/entries/[id]` | `{ entry }`，含菜系、小类及其父类名称、标签，以及 `photos[]` 与 `cover_photo_url`；无记录返回 404 |
+| `DELETE /api/entries/[id]` | `{ ok: true }`；非本人返回 403；库行级联删除后尽力删除 R2 对象 |
+| `GET /api/photos/status` | `{ configured }`，是否已配置 R2 |
+| `POST /api/photos/presign` | 本人签发短时预签名 PUT；未配置返回 503「图片存储未配置」，满 3 张返回 400 |
+| `POST /api/photos/confirm` | 校验对象键归属后写入 `entry_photos` |
+| `DELETE /api/photos/[id]` | 本人删除照片行并尽力删除 R2 对象 |
 | `GET /api/categories` | `{ categories }`，大类 |
 | `GET /api/categories?parent_id=uuid` | `{ categories }`，指定大类的小类 |
 | `GET /api/entries/nearby?lat=31&lng=121&radiusKm=5` | `{ entries }`，仅有坐标的餐饮，按距离排序 |
@@ -142,7 +153,21 @@ PC 提供底部居中 Dock；移动 Web 提供右下展开菜单。登录页独�
 
 服务端首屏只输出稳定的登录验证壳，客户端完成 token 验证后挂载业务内容；地图继续动态加载，避免 Leaflet 访问 SSR 的浏览器对象。后台登录复核保留未保存表单；登录失效或换账号会清理业务子树。详情日期继续统一 UTC 的 YYYY-MM-DD。
 
-可选执行 `supabase/migrations/005_dashboard_indexes.sql` 添加查询索引；使用 IF NOT EXISTS，可重复执行；本轮不新增业务表。
+可选执行 `supabase/migrations/005_dashboard_indexes.sql` 添加查询索引；使用 IF NOT EXISTS，可重复执行。可选照片需另执行 `006_entry_photos.sql`。
+
+### 可选照片（Cloudflare R2）
+
+登记、列表、详情和地图封面支持最多 3 张可选照片。浏览器将图片压到约 1MB（硬顶约 1.2MB）后，用预签名 PUT 直传 R2，服务端不经手文件字节。列表/地图附带 `cover_photo_url`（`sort=0`），详情附带 `photos[]`。登录用户可见其已能看到的记录上的照片；只有记录所有者能上传或删除。
+
+启用步骤：
+
+1. 在 Cloudflare R2 创建桶，并设置公开读或自定义域名，将公开前缀写入 `R2_PUBLIC_BASE_URL`。
+2. 创建有对象读写权限的 API Token，把密钥写入 `.env.local` 或服务器 `food-notes.env`，**不要提交到仓库**。
+3. 为桶配置 CORS，至少允许生产站与本地开发源的 `PUT` / `GET` / `HEAD`，例如 `https://food.nerosun.cn` 与 `http://localhost:3000`。
+4. 在 Supabase 执行 [006_entry_photos.sql](supabase/migrations/006_entry_photos.sql)。
+5. 重启应用。未配置 R2 时，选图区显示「图片存储未配置」，文字登记仍可用。
+
+设计见 [R2 照片设计说明](docs/superpowers/specs/2026-11-01-r2-photos-design.md)，实现计划见 [R2 照片实施计划](docs/superpowers/plans/2026-11-01-r2-photos.md)。
 
 ## 验证状态与文档
 
