@@ -1,10 +1,19 @@
 'use client';
 
-import { MapContainer, Marker } from 'react-leaflet';
+import { useEffect } from 'react';
+import { MapContainer, Marker, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { setupDefaultMarkerIcons } from '@/components/map/leafletSetup';
 import MapTileLayer from '@/components/map/MapTileLayer';
 import MapErrorBoundary from '@/components/map/MapErrorBoundary';
+
+function InvalidateSize() {
+  const map = useMap();
+  useEffect(() => {
+    map.invalidateSize();
+  }, [map]);
+  return null;
+}
 
 export type EntryMiniMapProps = { lat: number; lng: number; name: string };
 
@@ -22,6 +31,7 @@ export default function EntryMiniMap({ lat, lng, name }: EntryMiniMapProps) {
           dragging
         >
           <MapTileLayer />
+          <InvalidateSize />
           <Marker position={[lat, lng]} title={name} />
         </MapContainer>
       </MapErrorBoundary>

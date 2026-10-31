@@ -64,7 +64,7 @@ export default function Home() {
               onClick={() => { setKind(tab.value); setNearbyPoint(null); }}>{tab.label}</button>)}
         </div>
         <form onSubmit={(e) => { e.preventDefault(); setKind('place'); setNearbyPoint({ ...location }); }}>
-          <LocationField value={location} onChange={setLocation} />
+          <LocationField value={location} onChange={setLocation} withPicker={false} />
           <div className="row">
             <button disabled={loading}>查看附近餐饮（5 公里）</button>
             <button className="secondary" disabled={loading} type="button"

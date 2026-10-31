@@ -13,3 +13,8 @@ export const DynamicEntryMiniMap = dynamic(() => import('@/components/map/EntryM
   ssr: false,
   loading,
 });
+
+export const DynamicLocationPickerMap = dynamic(
+  () => import('@/components/map/LocationPickerMap'),
+  { ssr: false, loading },
+);
