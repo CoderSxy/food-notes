@@ -37,6 +37,8 @@ npm start
 7. 执行 [004_half_star_ratings.sql](supabase/migrations/004_half_star_ratings.sql) 一次，将评分改为支持 0.5 分递增的数值类型，保留已有整数评分。
 8. 从项目设置复制项目 URL、anon key 和 service role key 到本地环境变量或 Vercel 环境变量。
 
+本地「记一笔」保存失败时，运行 `npm run check:setup`（Node.js 20.19+）。脚本读取 `.env.local`（进程环境变量优先），只读检查 service_role JWT 角色、`public.entries` 及 `kind/rating/lat/lng`、半星查询、用户名密码列、账号数和菜系数；失败时退出码非零，并给出 002/003/004 迁移、种子及密钥的中文排查清单。JWT 仅解码，后续请求才验证访问；基础检查不覆盖全部约束和实际保存，请勿盲目重复执行迁移。开发环境接口显示脱敏后的数据库代码与消息，完整原始错误见服务端日志；生产环境未知错误保持通用提示。脚本不打印密钥、不写入数据，请勿提交 `.env.local` 或密钥。
+
 迁移后主表为 `entries`，原 `foods` 数据保留，默认 `kind=place`；原关联表及其外键迁移为 `entry_cuisines` 和 `entry_tags`。数据模型：
 
 | 表 / 类型 | 用途与约束 |
