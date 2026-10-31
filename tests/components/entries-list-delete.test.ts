@@ -1,9 +1,5 @@
-import { expect, it, vi } from "vitest";
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
-  useSearchParams: () => new URLSearchParams("scope=mine"),
-}));
-import { nextListAfterDelete } from "@/app/entries/page";
+import { expect, it } from "vitest";
+import { nextListAfterDelete } from "@/lib/entries-list";
 import type { Entry } from "@/lib/entries";
 import type { EntryPage } from "@/lib/entry-types";
 
