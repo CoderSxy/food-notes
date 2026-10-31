@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth/requestUser";
 import { getEntry, updateEntry } from "@/lib/entries";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { apiError, HttpError } from "@/lib/http";
-import { listPhotos } from "@/lib/photos";
+import { listPhotos, type EntryPhoto } from "@/lib/photos";
 import { deleteR2Object } from "@/lib/r2";
 import { entryCreateSchema } from "@/lib/validations/entry";
 type Context = { params: Promise<{ id: string }> };
@@ -26,7 +26,8 @@ export async function DELETE(req: Request, ctx: Context) {
     if (!entry) throw new HttpError("记录不存在", 404);
     if (entry.user_id !== user.userId)
       throw new HttpError("只能删除自己的记录", 403);
-    const photos = entry.photos ?? (await listPhotos(id));
+    const photos =
+      (entry.photos as EntryPhoto[] | undefined) ?? (await listPhotos(id));
     const { error } = await createAdminClient()
       .from("entries")
       .delete()
