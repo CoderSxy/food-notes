@@ -1,0 +1,24 @@
+lib/entries.ts
+  s_195e7b9ae55e1e::t_64857461a5ee24 13-14
+tests/entries/data.test.ts
+  s_195e7b9ae55e1e::t_f6471aa5deb15f 12
+  s_195e7b9ae55e1e::t_18db0c1165bca6 19-22
+tests/entries/hydrate.test.ts
+  s_195e7b9ae55e1e::t_2f5a336d12e789 9,12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "db7c762af5ecf8f5e64d93ffdf5c3b19041d3ac3",
+  "prompts": {},
+  "sessions": {
+    "s_195e7b9ae55e1e": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "0e0b7ff4-14af-4b31-b892-66c61a0193b8",
+        "model": "grok-4.6"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
