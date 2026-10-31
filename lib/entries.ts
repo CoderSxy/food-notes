@@ -7,6 +7,8 @@ import {
   listPhotosForEntries,
   type EntryPhoto,
 } from "@/lib/photos";
+import type { EntryPhotoThumb } from "@/lib/photo-constants";
+export type { EntryPhotoThumb } from "@/lib/photo-constants";
 export type DictionaryItem = { id: string; name: string };
 export type Entry = {
   id: string;
@@ -25,7 +27,7 @@ export type Entry = {
   tags: DictionaryItem[];
   distanceKm?: number;
   cover_photo_url?: string | null;
-  photos?: EntryPhoto[];
+  photos?: EntryPhotoThumb[];
 };
 export type PlaceEntry = Entry & { kind: "place"; lat: number; lng: number };
 // PostgREST 14 embeds this self-FK by column. A constraint-name hint yields PGRST200.
@@ -54,21 +56,43 @@ function groupPhotos(photos: EntryPhoto[]) {
   }
   return grouped;
 }
+export type AttachPhotosOpts = {
+  mode?: "cover" | "thin" | "full";
+  full?: boolean;
+};
+
+export function resolveAttachMode(
+  opts?: AttachPhotosOpts,
+): "cover" | "thin" | "full" {
+  if (opts?.mode) return opts.mode;
+  if (opts?.full) return "full";
+  return "cover";
+}
+
+function asThumbs(photos: EntryPhoto[]): EntryPhotoThumb[] {
+  return [...photos]
+    .sort((a, b) => a.sort - b.sort)
+    .map(({ id, public_url, sort }) => ({ id, public_url, sort }));
+}
+
 export async function attachPhotos<T extends Entry>(
   entries: T[],
-  opts?: { full?: boolean },
+  opts?: AttachPhotosOpts,
 ): Promise<T[]> {
   if (!entries.length) return entries;
+  const mode = resolveAttachMode(opts);
   const grouped = groupPhotos(
     await listPhotosForEntries(entries.map((entry) => entry.id)),
   );
   return entries.map((entry) => {
-    const photos = grouped.get(entry.id) ?? [];
-    return {
-      ...entry,
-      cover_photo_url: coverUrlFromPhotos(photos),
-      ...(opts?.full ? { photos } : {}),
-    };
+    const photos = [...(grouped.get(entry.id) ?? [])].sort(
+      (a, b) => a.sort - b.sort,
+    );
+    const cover_photo_url = coverUrlFromPhotos(photos);
+    if (mode === "cover") return { ...entry, cover_photo_url };
+    if (mode === "thin")
+      return { ...entry, cover_photo_url, photos: asThumbs(photos) };
+    return { ...entry, cover_photo_url, photos };
   });
 }
 export async function attachCoverUrls<T extends { id: string }>(
@@ -97,7 +121,9 @@ export async function listEntries(
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) throw error;
-  return attachPhotos((data as unknown as RawEntry[]).map(hydrateEntry));
+  return attachPhotos((data as unknown as RawEntry[]).map(hydrateEntry), {
+    mode: "thin",
+  });
 }
 export async function getEntry(
   id: string,
@@ -139,7 +165,7 @@ export async function nearbyPlaceEntries(
     .map((entry) => ({ ...entry, distanceKm: haversineKm(point, entry) }))
     .filter((entry) => entry.distanceKm <= radiusKm)
     .sort((a, b) => a.distanceKm - b.distanceKm);
-  return attachPhotos(nearby);
+  return attachPhotos(nearby, { mode: "thin" });
 }
 export async function createEntry(userId: string, parsed: EntryCreate) {
   if (parsed.kind === "item") await assertLeafCategoryIds(parsed.categoryIds);
@@ -252,6 +278,7 @@ export async function listEntryPage(
   return {
     entries: await attachPhotos(
       (data as unknown as RawEntry[]).map(hydrateEntry),
+      { mode: "thin" },
     ),
     total: count ?? 0,
     page: filter.page,

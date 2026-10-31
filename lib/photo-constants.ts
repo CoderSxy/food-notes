@@ -22,6 +22,8 @@ export type EntryPhoto = {
   created_at: string;
 };
 
+export type EntryPhotoThumb = Pick<EntryPhoto, "id" | "public_url" | "sort">;
+
 export function nextPhotoSort(photos: Pick<EntryPhoto, "sort">[]): number {
   const used = new Set(photos.map((photo) => photo.sort));
   for (let sort = 0; sort < MAX_PHOTOS; sort++) {
