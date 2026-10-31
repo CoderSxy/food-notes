@@ -2,6 +2,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { haversineKm, type LatLng } from "@/lib/geo/haversine";
 import { assertLeafCategoryIds, type Category } from "@/lib/categories";
 import type { EntryCreate } from "@/lib/validations/entry";
+import {
+  coverUrlFromPhotos,
+  listPhotosForEntries,
+  type EntryPhoto,
+} from "@/lib/photos";
 export type DictionaryItem = { id: string; name: string };
 export type Entry = {
   id: string;
@@ -19,6 +24,8 @@ export type Entry = {
   categories: Category[];
   tags: DictionaryItem[];
   distanceKm?: number;
+  cover_photo_url?: string | null;
+  photos?: EntryPhoto[];
 };
 export type PlaceEntry = Entry & { kind: "place"; lat: number; lng: number };
 // PostgREST 14 embeds this self-FK by column. A constraint-name hint yields PGRST200.
@@ -38,6 +45,45 @@ export function hydrateEntry(raw: RawEntry): Entry {
     tags: entry_tags.map((v) => v.tags),
   };
 }
+function groupPhotos(photos: EntryPhoto[]) {
+  const grouped = new Map<string, EntryPhoto[]>();
+  for (const photo of photos) {
+    const list = grouped.get(photo.entry_id) ?? [];
+    list.push(photo);
+    grouped.set(photo.entry_id, list);
+  }
+  return grouped;
+}
+export async function attachPhotos(
+  entries: Entry[],
+  opts?: { full?: boolean },
+): Promise<Entry[]> {
+  if (!entries.length) return entries;
+  const grouped = groupPhotos(
+    await listPhotosForEntries(entries.map((entry) => entry.id)),
+  );
+  return entries.map((entry) => {
+    const photos = grouped.get(entry.id) ?? [];
+    return {
+      ...entry,
+      cover_photo_url: coverUrlFromPhotos(photos),
+      ...(opts?.full ? { photos } : {}),
+    };
+  });
+}
+export async function attachCoverUrls<T extends { id: string }>(
+  items: T[],
+): Promise<(T & { cover_photo_url: string | null })[]> {
+  if (!items.length)
+    return items.map((item) => ({ ...item, cover_photo_url: null }));
+  const grouped = groupPhotos(
+    await listPhotosForEntries(items.map((item) => item.id)),
+  );
+  return items.map((item) => ({
+    ...item,
+    cover_photo_url: coverUrlFromPhotos(grouped.get(item.id) ?? []),
+  }));
+}
 export function isPlaceEntry(entry: Entry): entry is PlaceEntry {
   return entry.kind === "place" && entry.lat !== null && entry.lng !== null;
 }
@@ -51,7 +97,7 @@ export async function listEntries(
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) throw error;
-  return (data as unknown as RawEntry[]).map(hydrateEntry);
+  return attachPhotos((data as unknown as RawEntry[]).map(hydrateEntry));
 }
 export async function getEntry(
   id: string,
@@ -64,7 +110,12 @@ export async function getEntry(
   if (kind) query = query.eq("kind", kind);
   const { data, error } = await query.maybeSingle();
   if (error) throw error;
-  return data ? hydrateEntry(data as unknown as RawEntry) : null;
+  if (!data) return null;
+  const [entry] = await attachPhotos(
+    [hydrateEntry(data as unknown as RawEntry)],
+    { full: true },
+  );
+  return entry ?? null;
 }
 export async function nearbyPlaceEntries(
   point: LatLng,
@@ -82,12 +133,13 @@ export async function nearbyPlaceEntries(
     .order("created_at", { ascending: false })
     .limit(500);
   if (error) throw error;
-  return (data as unknown as RawEntry[])
+  const nearby = (data as unknown as RawEntry[])
     .map(hydrateEntry)
     .filter(isPlaceEntry)
     .map((entry) => ({ ...entry, distanceKm: haversineKm(point, entry) }))
     .filter((entry) => entry.distanceKm <= radiusKm)
     .sort((a, b) => a.distanceKm - b.distanceKm);
+  return attachPhotos(nearby);
 }
 export async function createEntry(userId: string, parsed: EntryCreate) {
   if (parsed.kind === "item") await assertLeafCategoryIds(parsed.categoryIds);
@@ -198,7 +250,9 @@ export async function listEntryPage(
     );
   if (error) throw error;
   return {
-    entries: (data as unknown as RawEntry[]).map(hydrateEntry),
+    entries: await attachPhotos(
+      (data as unknown as RawEntry[]).map(hydrateEntry),
+    ),
     total: count ?? 0,
     page: filter.page,
     pageSize: filter.pageSize,
@@ -230,7 +284,7 @@ export async function listMapPoints(
   if (error) throw error;
   const points = (data ?? []) as import("@/lib/entry-types").MapPoint[];
   const hasMore = points.length > 500;
-  const page = points.slice(0, 500);
+  const page = await attachCoverUrls(points.slice(0, 500));
   const last = page.at(-1);
   return {
     points: page,

@@ -2,7 +2,7 @@ import { z } from "zod";
 import {
   ALLOWED_CONTENT_TYPES,
   MAX_BYTES,
-} from "@/lib/photos";
+} from "@/lib/photo-constants";
 
 const contentType = z.enum(ALLOWED_CONTENT_TYPES);
 const optionalSize = z.number().int().positive().max(20_000).optional();

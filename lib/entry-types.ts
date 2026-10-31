@@ -11,7 +11,7 @@ export type EntrySummary = {
 export type MapPoint = Pick<
   Entry,
   "id" | "kind" | "name" | "rating" | "address_text" | "created_at"
-> & { lat: number; lng: number };
+> & { lat: number; lng: number; cover_photo_url?: string | null };
 export type MapPage = {
   points: MapPoint[];
   nextCursor: string | null;

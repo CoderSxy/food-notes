@@ -17,6 +17,7 @@ vi.mock("@/lib/supabase/admin", () => ({
         "select",
         "eq",
         "not",
+        "in",
         "order",
         "limit",
         "range",
@@ -110,11 +111,15 @@ it("loads map pages of 500 and makes a stable cursor for equal dates", async () 
     "me",
     parseMapQuery(new URLSearchParams({ cursor: first.nextCursor! })),
   );
-  expect(second.points).toEqual([points[500]]);
+  expect(second.points).toEqual([
+    { ...points[500], cover_photo_url: null },
+  ]);
   expect(second.hasMore).toBe(false);
   expect(
-    db.queries[1].ops.some(
-      (x) => x[0] === "or" && String(x[1]).includes(points[499].id),
+    db.queries.some((query) =>
+      query.ops.some(
+        (x) => x[0] === "or" && String(x[1]).includes(points[499].id),
+      ),
     ),
   ).toBe(true);
 });
