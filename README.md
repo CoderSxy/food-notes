@@ -4,6 +4,8 @@
 
 已实现用户名密码（默认）与手机号测试验证码（次要）登录、30 天 httpOnly JWT 会话、餐饮与物品的统一列表和详情、分类筛选、登记与本人删除、定位及手动经纬度、餐饮多菜系、物品两级分类、多标签、1–5 半星评分（0.5 分递增）、附近餐饮距离排序和 AI 推荐。页面文案为简体中文。
 
+地图足迹使用 [Leaflet](https://leafletjs.com/) + [react-leaflet](https://react-leaflet.js.org/)，底图为 [OpenStreetMap](https://www.openstreetmap.org/copyright) 标准瓦片（需保留 © OpenStreetMap 署名）。首页展示有坐标登记的足迹（默认「我的」，可切换「全部」）；详情页有坐标时显示小地图；登记页支持地图点选与拖钉，并与定位/手填经纬度同步。本轮不包含独立 `/map` 页、路线或热力图。
+
 ## 本地运行
 
 需要 Node.js 20.19+ 和 npm。

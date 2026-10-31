@@ -84,7 +84,9 @@ export default function Home() {
                 onClick={() => setOwnerScope(tab.value)}>{tab.label}</button>)}
           </div>
         </div>
-        {userId && <DynamicEntriesMap entries={entries} userId={userId} scope={ownerScope} />}
+        {userId && (loading && !entries.length
+          ? <p className="muted map-panel map-panel--loading">地图加载中…</p>
+          : <DynamicEntriesMap entries={entries} userId={userId} scope={ownerScope} />)}
       </section>
 
       {loading ? <p role="status">正在寻找好味道…</p> : <>

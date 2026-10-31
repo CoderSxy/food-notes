@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { MapContainer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import type { LeafletMouseEvent } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -21,12 +21,28 @@ function parseCoord(raw: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function MapViewSync({ lat, lng, zoom }: { lat: number; lng: number; zoom: number }) {
+function MapViewSync({
+  lat,
+  lng,
+  zoom,
+  hasPoint,
+}: {
+  lat: number;
+  lng: number;
+  zoom: number;
+  hasPoint: boolean;
+}) {
   const map = useMap();
+  const hadPoint = useRef(hasPoint);
   useEffect(() => {
     map.invalidateSize();
-    map.setView([lat, lng], zoom, { animate: false });
-  }, [map, lat, lng, zoom]);
+    if (hasPoint && hadPoint.current) {
+      map.panTo([lat, lng], { animate: false });
+    } else {
+      map.setView([lat, lng], zoom, { animate: false });
+    }
+    hadPoint.current = hasPoint;
+  }, [map, lat, lng, zoom, hasPoint]);
   return null;
 }
 
@@ -80,7 +96,7 @@ export default function LocationPickerMap({ value, onChange }: LocationPickerMap
           scrollWheelZoom
         >
           <MapTileLayer />
-          <MapViewSync lat={centerLat} lng={centerLng} zoom={zoom} />
+          <MapViewSync lat={centerLat} lng={centerLng} zoom={zoom} hasPoint={hasPoint} />
           <ClickAndDragMarker
             position={hasPoint ? [lat, lng] : null}
             onChange={onChange}
