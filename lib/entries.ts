@@ -1,12 +1,15 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { haversineKm, type LatLng } from "@/lib/geo/haversine";
 import { assertLeafCategoryIds, type Category } from "@/lib/categories";
+import { HttpError } from "@/lib/http";
 import type { EntryCreate } from "@/lib/validations/entry";
 import {
   coverUrlFromPhotos,
   listPhotosForEntries,
   type EntryPhoto,
 } from "@/lib/photos";
+import type { EntryPhotoThumb } from "@/lib/photo-constants";
+export type { EntryPhotoThumb } from "@/lib/photo-constants";
 export type DictionaryItem = { id: string; name: string };
 export type Entry = {
   id: string;
@@ -25,7 +28,7 @@ export type Entry = {
   tags: DictionaryItem[];
   distanceKm?: number;
   cover_photo_url?: string | null;
-  photos?: EntryPhoto[];
+  photos?: EntryPhotoThumb[];
 };
 export type PlaceEntry = Entry & { kind: "place"; lat: number; lng: number };
 // PostgREST 14 embeds this self-FK by column. A constraint-name hint yields PGRST200.
@@ -54,21 +57,43 @@ function groupPhotos(photos: EntryPhoto[]) {
   }
   return grouped;
 }
+export type AttachPhotosOpts = {
+  mode?: "cover" | "thin" | "full";
+  full?: boolean;
+};
+
+export function resolveAttachMode(
+  opts?: AttachPhotosOpts,
+): "cover" | "thin" | "full" {
+  if (opts?.mode) return opts.mode;
+  if (opts?.full) return "full";
+  return "cover";
+}
+
+function asThumbs(photos: EntryPhoto[]): EntryPhotoThumb[] {
+  return [...photos]
+    .sort((a, b) => a.sort - b.sort)
+    .map(({ id, public_url, sort }) => ({ id, public_url, sort }));
+}
+
 export async function attachPhotos<T extends Entry>(
   entries: T[],
-  opts?: { full?: boolean },
+  opts?: AttachPhotosOpts,
 ): Promise<T[]> {
   if (!entries.length) return entries;
+  const mode = resolveAttachMode(opts);
   const grouped = groupPhotos(
     await listPhotosForEntries(entries.map((entry) => entry.id)),
   );
   return entries.map((entry) => {
-    const photos = grouped.get(entry.id) ?? [];
-    return {
-      ...entry,
-      cover_photo_url: coverUrlFromPhotos(photos),
-      ...(opts?.full ? { photos } : {}),
-    };
+    const photos = [...(grouped.get(entry.id) ?? [])].sort(
+      (a, b) => a.sort - b.sort,
+    );
+    const cover_photo_url = coverUrlFromPhotos(photos);
+    if (mode === "cover") return { ...entry, cover_photo_url };
+    if (mode === "thin")
+      return { ...entry, cover_photo_url, photos: asThumbs(photos) };
+    return { ...entry, cover_photo_url, photos };
   });
 }
 export async function attachCoverUrls<T extends { id: string }>(
@@ -97,7 +122,9 @@ export async function listEntries(
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) throw error;
-  return attachPhotos((data as unknown as RawEntry[]).map(hydrateEntry));
+  return attachPhotos((data as unknown as RawEntry[]).map(hydrateEntry), {
+    mode: "thin",
+  });
 }
 export async function getEntry(
   id: string,
@@ -139,7 +166,7 @@ export async function nearbyPlaceEntries(
     .map((entry) => ({ ...entry, distanceKm: haversineKm(point, entry) }))
     .filter((entry) => entry.distanceKm <= radiusKm)
     .sort((a, b) => a.distanceKm - b.distanceKm);
-  return attachPhotos(nearby);
+  return attachPhotos(nearby, { mode: "thin" });
 }
 export async function createEntry(userId: string, parsed: EntryCreate) {
   if (parsed.kind === "item") await assertLeafCategoryIds(parsed.categoryIds);
@@ -205,6 +232,92 @@ export async function createEntry(userId: string, parsed: EntryCreate) {
   }
 }
 
+export async function updateEntry(
+  userId: string,
+  id: string,
+  parsed: EntryCreate,
+) {
+  const existing = await getEntry(id);
+  if (!existing) throw new HttpError("记录不存在", 404);
+  if (existing.user_id !== userId)
+    throw new HttpError("只能编辑自己的记录", 403);
+  if (existing.kind !== parsed.kind)
+    throw new HttpError("不能更改记录类型", 400);
+  if (parsed.kind === "item") await assertLeafCategoryIds(parsed.categoryIds);
+
+  const admin = createAdminClient();
+  const fields =
+    parsed.kind === "place"
+      ? {
+          name: parsed.name,
+          note: parsed.note ?? null,
+          rating: parsed.rating,
+          lat: parsed.lat,
+          lng: parsed.lng,
+          address_text: parsed.address_text ?? null,
+          updated_at: new Date().toISOString(),
+        }
+      : {
+          name: parsed.name,
+          note: parsed.note ?? null,
+          rating: parsed.rating,
+          lat: parsed.lat ?? null,
+          lng: parsed.lng ?? null,
+          address_text: parsed.address_text ?? null,
+          updated_at: new Date().toISOString(),
+        };
+
+  const { error } = await admin
+    .from("entries")
+    .update(fields)
+    .eq("id", id)
+    .eq("user_id", userId);
+  if (error) throw error;
+
+  for (const table of [
+    "entry_cuisines",
+    "entry_categories",
+    "entry_tags",
+  ] as const) {
+    const { error: wipe } = await admin.from(table).delete().eq("entry_id", id);
+    if (wipe) throw wipe;
+  }
+
+  if (parsed.kind === "place" && parsed.cuisineIds.length) {
+    const { error: join } = await admin.from("entry_cuisines").insert(
+      parsed.cuisineIds.map((cuisine_id) => ({ entry_id: id, cuisine_id })),
+    );
+    if (join) throw join;
+  }
+  if (parsed.kind === "item") {
+    const { error: join } = await admin.from("entry_categories").insert(
+      parsed.categoryIds.map((category_id) => ({
+        entry_id: id,
+        category_id,
+      })),
+    );
+    if (join) throw join;
+  }
+  if (parsed.tagNames.length) {
+    const { data: tags, error: tagError } = await admin
+      .from("tags")
+      .upsert(
+        parsed.tagNames.map((name) => ({ name })),
+        { onConflict: "name" },
+      )
+      .select("id");
+    if (tagError) throw tagError;
+    const { error: joinError } = await admin
+      .from("entry_tags")
+      .insert(tags.map((tag) => ({ entry_id: id, tag_id: tag.id })));
+    if (joinError) throw joinError;
+  }
+
+  const updated = await getEntry(id);
+  if (!updated) throw new HttpError("记录不存在", 404);
+  return updated;
+}
+
 // Dashboard queries are independent of the legacy latest-100 list.
 export async function getEntrySummary(
   userId: string,
@@ -252,6 +365,7 @@ export async function listEntryPage(
   return {
     entries: await attachPhotos(
       (data as unknown as RawEntry[]).map(hydrateEntry),
+      { mode: "thin" },
     ),
     total: count ?? 0,
     page: filter.page,

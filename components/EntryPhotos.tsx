@@ -5,7 +5,7 @@ import { uploadEntryPhoto } from "@/lib/browser-photos";
 import {
   MAX_PHOTOS,
   nextPhotoSort,
-  type EntryPhoto,
+  type EntryPhotoThumb,
 } from "@/lib/photo-constants";
 import PhotoPicker, {
   revokePickerPreviews,
@@ -20,10 +20,10 @@ export default function EntryPhotos({
   onChange,
 }: {
   entryId: string;
-  photos: EntryPhoto[];
+  photos: EntryPhotoThumb[];
   isOwner: boolean;
   storageReady?: boolean;
-  onChange: (photos: EntryPhoto[]) => void;
+  onChange: (photos: EntryPhotoThumb[]) => void;
 }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);

@@ -148,13 +148,21 @@ export default function Detail({
             <Link href="/entries/new">继续记录</Link>
           </p>
           {entry.user_id === userId && (
-            <button
-              className="danger"
-              disabled={busy}
-              onClick={() => void remove()}
-            >
-              {busy ? "正在删除…" : "删除我的记录"}
-            </button>
+            <p className="entry-card-actions">
+              <Link
+                className="secondary"
+                href={`/entries/${entry.id}/edit?from=${encodeURIComponent(source)}`}
+              >
+                编辑
+              </Link>
+              <button
+                className="danger"
+                disabled={busy}
+                onClick={() => void remove()}
+              >
+                {busy ? "正在删除…" : "删除我的记录"}
+              </button>
+            </p>
           )}
         </article>
       ) : (

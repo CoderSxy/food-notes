@@ -22,3 +22,4 @@ const itemCreateSchema = z.object({
 });
 export const entryCreateSchema = z.discriminatedUnion('kind', [placeCreateSchema, itemCreateSchema]);
 export type EntryCreate = z.infer<typeof entryCreateSchema>;
+export type EntryUpdate = EntryCreate;

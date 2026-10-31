@@ -4,12 +4,12 @@ vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from(table:
   const query = { table, ops: [] as [string, ...unknown[]][] }; db.queries.push(query);
   const result = db.results.shift() ?? { data: [], error: null };
   const builder: Record<string, unknown> = { then: (resolve: (v: unknown) => void) => Promise.resolve(result).then(resolve) };
-  for (const op of ['select', 'eq', 'not', 'in', 'is', 'order', 'limit', 'insert', 'upsert', 'delete', 'single', 'maybeSingle']) {
+  for (const op of ['select', 'eq', 'not', 'in', 'is', 'order', 'limit', 'insert', 'update', 'upsert', 'delete', 'single', 'maybeSingle']) {
     builder[op] = (...args: unknown[]) => { query.ops.push([op, ...args]); return builder; };
   }
   return builder;
 } }) }));
-import { createEntry, entrySelect, nearbyPlaceEntries } from '@/lib/entries';
+import { createEntry, entrySelect, nearbyPlaceEntries, updateEntry } from '@/lib/entries';
 import { assertLeafCategoryIds } from '@/lib/categories';
 const id = '11111111-1111-4111-8111-111111111111';
 const item = { kind: 'item' as const, name: 'IPA', rating: 5, categoryIds: [id], tagNames: [] };
@@ -48,5 +48,65 @@ describe('entry data boundaries', () => {
     expect(db.queries[0].ops).toContainEqual(['eq', 'kind', 'place']);
     expect(db.queries[0].ops).toContainEqual(['not', 'lat', 'is', null]);
     expect(db.queries[0].ops).toContainEqual(['not', 'lng', 'is', null]);
+  });
+  it('updates mutable fields and replaces associations without touching kind or photos', async () => {
+    const placeParsed = {
+      kind: 'place' as const,
+      name: '新面馆',
+      rating: 5,
+      lat: 30,
+      lng: 120,
+      cuisineIds: [id],
+      tagNames: ['清爽'],
+    };
+    db.results.push(
+      { data: raw, error: null },
+      { data: [], error: null },
+      { error: null },
+      { error: null },
+      { error: null },
+      { error: null },
+      { error: null },
+      { data: [{ id: 't', name: '清爽' }], error: null },
+      { error: null },
+      { data: { ...raw, name: '新面馆', rating: 5, lat: 30, lng: 120, entry_cuisines: [{ cuisines: { id, name: '本帮' } }], entry_tags: [{ tags: { id: 't', name: '清爽' } }] }, error: null },
+      { data: [], error: null },
+    );
+    const entry = await updateEntry('u', 'e', placeParsed);
+    expect(entry?.name).toBe('新面馆');
+    const entriesUpdate = db.queries.find((query) => query.table === 'entries' && query.ops[0]?.[0] === 'update');
+    expect(entriesUpdate?.ops[0]?.[1]).toMatchObject({
+      name: '新面馆',
+      rating: 5,
+      lat: 30,
+      lng: 120,
+    });
+    expect(entriesUpdate?.ops[0]?.[1]).not.toHaveProperty('kind');
+    expect(entriesUpdate?.ops[0]?.[1]).not.toHaveProperty('user_id');
+    expect(
+      db.queries.some(
+        (query) =>
+          query.table === 'entry_photos' &&
+          ['insert', 'update', 'delete'].includes(String(query.ops[0]?.[0])),
+      ),
+    ).toBe(false);
+    expect(db.queries.filter((query) => query.table === 'entry_cuisines').map((query) => query.ops[0]?.[0])).toEqual([
+      'delete',
+      'insert',
+    ]);
+  });
+
+  it('rejects a kind change inside updateEntry', async () => {
+    db.results.push({ data: raw, error: null });
+    await expect(
+      updateEntry('u', 'e', { kind: 'item', name: 'IPA', rating: 5, categoryIds: [id], tagNames: [] }),
+    ).rejects.toMatchObject({ status: 400, message: '不能更改记录类型' });
+  });
+
+  it('forbids updating another user record', async () => {
+    db.results.push({ data: raw, error: null });
+    await expect(updateEntry('other', 'e', {
+      kind: 'place', name: '面馆', rating: 4, lat: 31, lng: 121, cuisineIds: [], tagNames: [],
+    })).rejects.toMatchObject({ status: 403, message: '只能编辑自己的记录' });
   });
 });

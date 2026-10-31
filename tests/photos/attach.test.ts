@@ -136,3 +136,90 @@ it("adds cover_photo_url to map points", async () => {
     cover_photo_url: "https://cdn.example/a.webp",
   });
 });
+
+it("keeps cover mode free of photos and strips keys in thin mode", async () => {
+  const photos = [
+    {
+      id: "p1",
+      entry_id: "a",
+      user_id: "u",
+      r2_key: "secret/key",
+      public_url: "https://cdn.example/one.webp",
+      sort: 1,
+      width: null,
+      height: null,
+      bytes: null,
+      content_type: "image/webp",
+      created_at: "",
+    },
+    {
+      id: "p0",
+      entry_id: "a",
+      user_id: "u",
+      r2_key: "secret/cover",
+      public_url: "https://cdn.example/cover.webp",
+      sort: 0,
+      width: null,
+      height: null,
+      bytes: null,
+      content_type: "image/webp",
+      created_at: "",
+    },
+  ];
+  db.results.push({ data: photos, error: null });
+  const [coverOnly] = await attachPhotos<Entry>([{ ...base, id: "a" }]);
+  expect(coverOnly?.cover_photo_url).toBe("https://cdn.example/cover.webp");
+  expect(coverOnly?.photos).toBeUndefined();
+
+  db.results.push({ data: photos, error: null });
+  const [thin] = await attachPhotos<Entry>([{ ...base, id: "a" }], {
+    mode: "thin",
+  });
+  expect(thin?.cover_photo_url).toBe("https://cdn.example/cover.webp");
+  expect(thin?.photos).toEqual([
+    { id: "p0", public_url: "https://cdn.example/cover.webp", sort: 0 },
+    { id: "p1", public_url: "https://cdn.example/one.webp", sort: 1 },
+  ]);
+  expect(thin?.photos?.some((photo) => "r2_key" in photo && photo.r2_key)).toBe(
+    false,
+  );
+});
+
+it("uses the first sorted photo as cover when sort 0 is missing", async () => {
+  db.results.push({
+    data: [
+      {
+        id: "p2",
+        entry_id: "a",
+        user_id: "u",
+        r2_key: "k2",
+        public_url: "https://cdn.example/two.webp",
+        sort: 2,
+        width: null,
+        height: null,
+        bytes: null,
+        content_type: "image/webp",
+        created_at: "",
+      },
+      {
+        id: "p1",
+        entry_id: "a",
+        user_id: "u",
+        r2_key: "k1",
+        public_url: "https://cdn.example/one.webp",
+        sort: 1,
+        width: null,
+        height: null,
+        bytes: null,
+        content_type: "image/webp",
+        created_at: "",
+      },
+    ],
+    error: null,
+  });
+  const [entry] = await attachPhotos<Entry>([{ ...base, id: "a" }], {
+    mode: "thin",
+  });
+  expect(entry?.cover_photo_url).toBe("https://cdn.example/one.webp");
+  expect(entry?.photos?.map((photo) => photo.id)).toEqual(["p1", "p2"]);
+});

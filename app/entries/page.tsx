@@ -10,6 +10,21 @@ import PageHeader from "@/components/layout/PageHeader";
 import ScopeSwitch from "@/components/layout/ScopeSwitch";
 import Icon from "@/components/layout/Icon";
 import LocationField from "@/components/LocationField";
+
+export function nextListAfterDelete(
+  data: EntryPage,
+  id: string,
+  page: number,
+): { data: EntryPage; bumpPage: number | null } {
+  const entries = data.entries.filter((entry) => entry.id !== id);
+  const total = Math.max(0, data.total - 1);
+  const emptiedLaterPage = entries.length === 0 && page > 1;
+  return {
+    data: { ...data, entries, total },
+    bumpPage: emptiedLaterPage ? page - 1 : null,
+  };
+}
+
 function Records() {
   const params = useSearchParams();
   const router = useRouter();
@@ -190,7 +205,22 @@ function Records() {
             {data.entries.length ? (
               <div className="grid">
                 {data.entries.map((entry) => (
-                  <EntryCard key={entry.id} entry={entry} source={source} />
+                  <EntryCard
+                    key={entry.id}
+                    entry={entry}
+                    source={source}
+                    onDeleted={(id) => {
+                      setData((current) => {
+                        if (!current) return current;
+                        const next = nextListAfterDelete(current, id, page);
+                        if (next.bumpPage !== null) {
+                          change({ page: String(next.bumpPage) });
+                          return current;
+                        }
+                        return next.data;
+                      });
+                    }}
+                  />
                 ))}
               </div>
             ) : (
