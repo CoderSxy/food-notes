@@ -1,106 +1,277 @@
-'use client';
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import EntryCard from '@/components/EntryCard';
-import LocationField, { type LocationValue } from '@/components/LocationField';
-import { DynamicEntriesMap } from '@/components/map/dynamic';
-import { requestJson } from '@/lib/browser';
-import type { Entry } from '@/lib/entries';
-import type { OwnerScope } from '@/lib/geo/map';
-
-export default function Home() {
-  const [entries, setEntries] = useState<Entry[]>([]);
-  const [kind, setKind] = useState<'' | 'place' | 'item'>('');
-  const [error, setError] = useState('');
+"use client";
+import Link from "next/link";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { requestJson } from "@/lib/browser";
+import type {
+  EntrySummary,
+  MapKind,
+  MapPoint,
+  MapPage,
+  OwnerScope,
+} from "@/lib/entry-types";
+import { loadMapPages } from "@/lib/map-loader";
+import { DynamicDashboardMap } from "@/components/map/dynamic";
+import PageHeader from "@/components/layout/PageHeader";
+import ScopeSwitch from "@/components/layout/ScopeSwitch";
+import Icon from "@/components/layout/Icon";
+function Dashboard() {
+  const params = useSearchParams();
+  const router = useRouter();
+  const scope: OwnerScope = params.get("scope") === "all" ? "all" : "mine";
+  const kind: MapKind =
+    params.get("kind") === "place"
+      ? "place"
+      : params.get("kind") === "item"
+        ? "item"
+        : "all";
+  const [summary, setSummary] = useState<EntrySummary | null>(null);
+  const [summaryError, setSummaryError] = useState("");
+  const [points, setPoints] = useState<MapPoint[]>([]);
   const [loading, setLoading] = useState(true);
-  const [signedIn, setSignedIn] = useState(false);
-  const [userId, setUserId] = useState('');
-  const [ownerScope, setOwnerScope] = useState<OwnerScope>('mine');
-  const [location, setLocation] = useState({ lat: '', lng: '' });
-  const [nearbyPoint, setNearbyPoint] = useState<LocationValue | null>(null);
+  const [mapError, setMapError] = useState("");
   const [retry, setRetry] = useState(0);
-
+  const resume = useRef<string | null>(null);
+  const range = useRef("");
+  const [complete, setComplete] = useState(false);
+  const [changed, setChanged] = useState(false);
+  const source = `/?scope=${scope}&kind=${kind}`;
+  function filter(next: { scope?: OwnerScope; kind?: MapKind }) {
+    router.replace(`/?scope=${next.scope ?? scope}&kind=${next.kind ?? kind}`, {
+      scroll: false,
+    });
+  }
   useEffect(() => {
     let active = true;
-    fetch('/api/auth/me').then(async (r) => {
-      if (!active) return;
-      if (r.status === 401) { setLoading(false); return; }
-      if (!r.ok) throw new Error('无法读取登录状态，请重试');
-      const data = await r.json() as { user: { userId: string } };
-      setSignedIn(true);
-      setUserId(data.user.userId);
-    }).catch((e) => { if (active) { setError(e.message); setLoading(false); } });
-    return () => { active = false; };
-  }, []);
-
+    setSummary(null);
+    setSummaryError("");
+    requestJson<EntrySummary>(`/api/dashboard/summary?scope=${scope}`)
+      .then((s) => {
+        if (active) setSummary(s);
+      })
+      .catch((e) => {
+        if (active) setSummaryError(e.message);
+      });
+    return () => {
+      active = false;
+    };
+  }, [scope, retry]);
   useEffect(() => {
-    if (!signedIn) return;
-    let active = true;
-    setLoading(true); setError('');
-    const url = nearbyPoint
-      ? `/api/entries/nearby?lat=${encodeURIComponent(nearbyPoint.lat)}&lng=${encodeURIComponent(nearbyPoint.lng)}`
-      : `/api/entries${kind ? `?kind=${kind}` : ''}`;
-    requestJson<{ entries: Entry[] }>(url).then((data) => { if (active) setEntries(data.entries); })
-      .catch((e) => { if (active) setError(e.message); }).finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, [signedIn, kind, nearbyPoint, retry]);
-
-  return <>
-    <section className="hero">
-      <p className="muted">属于大家的好味道收藏夹</p>
-      <h1>美食地图</h1>
-      <p>从街角小店到随手分享的零食，记下每一份喜欢的味道。</p>
-      <div className="row">
-        <Link className="button" href="/entries/new">＋ 记一笔</Link>
-        <Link href="/recommend">探索附近 · AI 推荐 →</Link>
+    const controller = new AbortController();
+    const key = `${scope}:${kind}`;
+    if (range.current !== key) {
+      range.current = key;
+      resume.current = null;
+      setPoints([]);
+    }
+    setComplete(false);
+    setLoading(true);
+    setMapError("");
+    setChanged(false);
+    void loadMapPages(
+      (cursor) =>
+        requestJson<MapPage>(
+          `/api/entries/map?scope=${scope}&kind=${kind}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`,
+          { signal: controller.signal },
+        ),
+      (page) => {
+        resume.current = page.nextCursor;
+        setPoints((previous) => {
+          const all = new Map(previous.map((p) => [p.id, p]));
+          page.points.forEach((p) => all.set(p.id, p));
+          return [...all.values()];
+        });
+      },
+      controller.signal,
+      resume.current,
+    )
+      .then(async () => {
+        if (controller.signal.aborted) return;
+        setComplete(true);
+        range.current = "";
+        try {
+          const latest = await requestJson<EntrySummary>(
+            `/api/dashboard/summary?scope=${scope}`,
+            { signal: controller.signal },
+          );
+          if (!controller.signal.aborted)
+            setSummary((old) => {
+              if (old && JSON.stringify(old) !== JSON.stringify(latest))
+                setChanged(true);
+              return latest;
+            });
+        } catch {
+          /* Keep independently loaded statistics if recheck fails. */
+        }
+      })
+      .catch((e) => {
+        if (!controller.signal.aborted) setMapError(e.message);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => controller.abort();
+  }, [scope, kind, retry]);
+  const total = summary
+    ? kind === "place"
+      ? summary.placeCount
+      : kind === "item"
+        ? summary.itemCount
+        : summary.placeCount + summary.itemCount
+    : null;
+  const mapped = summary
+    ? kind === "place"
+      ? summary.mappedPlaceCount
+      : kind === "item"
+        ? summary.mappedItemCount
+        : summary.mappedPlaceCount + summary.mappedItemCount
+    : null;
+  return (
+    <>
+      <PageHeader
+        title="总览"
+        description={
+          scope === "mine"
+            ? "你记录的味道与日常，都在这里。"
+            : "看看大家记录的味道与日常。"
+        }
+      >
+        <ScopeSwitch
+          value={scope}
+          onChange={(value) => filter({ scope: value })}
+        />
+      </PageHeader>
+      <div className="summary-grid">
+        {[
+          {
+            kind: "place" as const,
+            label: "餐饮记录",
+            icon: "food" as const,
+            count: summary?.placeCount,
+          },
+          {
+            kind: "item" as const,
+            label: "物品记录",
+            icon: "item" as const,
+            count: summary?.itemCount,
+          },
+        ].map((card) => (
+          <Link
+            key={card.kind}
+            className={`summary-card ${card.kind}`}
+            href={`/entries?scope=${scope}&kind=${card.kind}`}
+          >
+            <div className="summary-label">
+              <span>{card.label}</span>
+              <span className="category-icon">
+                <Icon name={card.icon} />
+              </span>
+            </div>
+            <div className="summary-number">
+              {card.count === undefined
+                ? "—"
+                : card.count.toLocaleString("zh-CN")}
+              <small>条</small>
+            </div>
+            <span className="summary-link">
+              查看记录
+              <Icon name="arrow" size={16} />
+            </span>
+          </Link>
+        ))}
       </div>
-    </section>
-    {signedIn ? <>
-      <section className="panel">
-        <h2>发现美味</h2>
-        <div className="tabs" aria-label="记录类型筛选">
-          {([{ value: '', label: '全部' }, { value: 'place', label: '餐饮' }, { value: 'item', label: '物品' }] as const).map((tab) =>
-            <button type="button" className="tab" key={tab.value} aria-pressed={kind === tab.value}
-              onClick={() => { setKind(tab.value); setNearbyPoint(null); }}>{tab.label}</button>)}
+      {summaryError && (
+        <div className="inline-error" role="alert">
+          统计加载失败：{summaryError}
+          <button className="secondary" onClick={() => setRetry((v) => v + 1)}>
+            重试
+          </button>
         </div>
-        <form onSubmit={(e) => { e.preventDefault(); setKind('place'); setNearbyPoint({ ...location }); }}>
-          <LocationField value={location} onChange={setLocation} withPicker={false} />
-          <div className="row">
-            <button disabled={loading}>查看附近餐饮（5 公里）</button>
-            <button className="secondary" disabled={loading} type="button"
-              onClick={() => { setNearbyPoint(null); setRetry((n) => n + 1); }}>查看最新记录</button>
+      )}
+      <section className="dashboard-section">
+        <div className="map-heading">
+          <div>
+            <h2>记录地图</h2>
+            <p className="muted">餐饮与有位置的物品</p>
           </div>
-        </form>
-        {nearbyPoint && <p className="muted">正在展示附近餐饮，物品不参与附近查询。</p>}
-      </section>
-
-      <section className="map-section" aria-label="足迹地图">
-        <div className="row between">
-          <h2>足迹总览</h2>
-          <div className="tabs" aria-label="足迹范围">
-            {([{ value: 'mine' as const, label: '我的' }, { value: 'all' as const, label: '全部' }]).map((tab) =>
-              <button type="button" className="tab" key={tab.value}
-                aria-pressed={ownerScope === tab.value}
-                onClick={() => setOwnerScope(tab.value)}>{tab.label}</button>)}
+          <div className="segmented" role="group" aria-label="地图类型">
+            {(["all", "place", "item"] as const).map((value) => (
+              <button
+                key={value}
+                aria-pressed={kind === value}
+                onClick={() => filter({ kind: value })}
+              >
+                {value === "all" ? "全部" : value === "place" ? "餐饮" : "物品"}
+              </button>
+            ))}
           </div>
         </div>
-        {userId && (loading && !entries.length
-          ? <p className="muted map-panel map-panel--loading">地图加载中…</p>
-          : <DynamicEntriesMap entries={entries} userId={userId} scope={ownerScope} />)}
+        <DynamicDashboardMap
+          key={`${scope}:${kind}`}
+          points={points}
+          complete={complete}
+          source={source}
+        />
+        <div className="map-caption">
+          <div className="map-legend">
+            <span>
+              <i className="legend-dot place" />
+              餐饮
+            </span>
+            <span>
+              <i className="legend-dot item" />
+              物品
+            </span>
+          </div>
+          <span role="status">
+            {loading
+              ? `正在加载点位：${points.length}${mapped !== null ? ` / ${mapped}` : ""}`
+              : mapError
+                ? `已加载 ${points.length} 个点位，尚未加载完整`
+                : total !== null && mapped !== null
+                  ? `${total} 条记录 · ${mapped} 条有位置 · ${total - mapped} 条未记录位置`
+                  : `已加载 ${points.length} 个点位`}
+          </span>
+          <Link
+            href={`/entries?scope=${scope}${kind !== "all" ? `&kind=${kind}` : ""}`}
+          >
+            查看记录
+          </Link>
+        </div>
+        {mapError && (
+          <div className="inline-error" role="alert">
+            {mapError}
+            <button
+              className="secondary"
+              onClick={() => setRetry((v) => v + 1)}
+            >
+              继续加载
+            </button>
+          </div>
+        )}
+        {changed && (
+          <div className="inline-error">
+            记录在加载期间有变化，可刷新获得最新点位。
+            <button
+              className="secondary"
+              onClick={() => {
+                range.current = "";
+                resume.current = null;
+                setRetry((v) => v + 1);
+              }}
+            >
+              刷新地图
+            </button>
+          </div>
+        )}
       </section>
-
-      {loading ? <p role="status">正在寻找好味道…</p> : <>
-        <p className="error" role="alert">{error}</p>
-        {error ? <button className="secondary" onClick={() => setRetry((n) => n + 1)}>重新加载</button> : <>
-          <div className="grid">{entries.map((entry) => <EntryCard key={entry.id} entry={entry} />)}</div>
-          {!entries.length && <div className="panel empty"><h2>这里还没有记录</h2><p>第一份美味，等你来发现。</p><Link href="/entries/new">去记一笔 →</Link></div>}
-        </>}
-      </>}
-    </> : <section className="panel empty">
-      <h2>{loading ? '正在加载…' : '登录后，发现更多美味'}</h2>
-      <p>登录后即可查看大家的记录，收藏自己的味觉记忆。</p>
-      {error && <p className="error">{error}</p>}
-      <Link className="button" href="/login">前往登录</Link>
-    </section>}
-  </>;
+    </>
+  );
+}
+export default function Home() {
+  return (
+    <Suspense fallback={<p role="status">正在加载总览…</p>}>
+      <Dashboard />
+    </Suspense>
+  );
 }

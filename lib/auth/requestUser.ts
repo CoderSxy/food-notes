@@ -1,12 +1,18 @@
-import { cookies } from 'next/headers';
-import { SESSION_COOKIE,verifySessionToken } from './session';
-export async function getUserFromCookies() {
- const token=(await cookies()).get(SESSION_COOKIE)?.value;
- return token ? verifySessionToken(token) : null;
-}
+import { verifySessionToken } from "./session";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { HttpError } from "@/lib/http";
 
-export async function requireUser() {
- const user=await getUserFromCookies();
- if(!user) { const {HttpError}=await import('@/lib/http');throw new HttpError('请先登录',401); }
- return user;
+export async function requireUser(req: Request) {
+  const authorization = req.headers.get("authorization");
+  const match = authorization?.match(/^Bearer ([^\s]+)$/i);
+  const user = match ? await verifySessionToken(match[1]) : null;
+  if (!user) throw new HttpError("请先登录", 401);
+  const { data, error } = await createAdminClient()
+    .from("users")
+    .select("id")
+    .eq("id", user.userId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) throw new HttpError("请先登录", 401);
+  return user;
 }

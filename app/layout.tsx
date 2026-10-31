@@ -1,37 +1,20 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { Noto_Sans_SC, ZCOOL_XiaoWei } from "next/font/google";
+import AppShell from "@/components/layout/AppShell";
 import "leaflet/dist/leaflet.css";
 import "./globals.css";
 
-// Let Next own font assets and head hints. Disable preloading because these CJK
-// families are split into many unicode ranges rather than one useful subset.
-const notoSans = Noto_Sans_SC({ weight: ["400", "500", "700"], display: "swap", preload: false, variable: "--font-noto-sans" });
-const xiaoWei = ZCOOL_XiaoWei({ weight: "400", display: "swap", preload: false, variable: "--font-xiaowei" });
+export const metadata: Metadata = {
+  title: "美食地图",
+  description: "记下好味道，发现身边的美食",
+};
 
-export const metadata: Metadata = { title: "美食地图", description: "记下好味道，发现身边的美食" };
-
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="zh-CN" className={`${notoSans.variable} ${xiaoWei.variable}`}>
+    <html lang="zh-CN">
       <body>
-        <header className="site-header">
-          <Link href="/" className="brand">
-            <svg className="brand-mark" viewBox="0 0 36 36" aria-hidden="true">
-              <path d="M10 9.5c1.2 2.4 2.6 3.7 8 3.7s6.8-1.3 8-3.7" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-              <path d="M8 16.5h20c-.4 8.2-4.6 13-10 13s-9.6-4.8-10-13z" fill="currentColor" />
-              <path d="M7 16.5h22" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-            </svg>
-            <span className="brand-copy">美食地图<span>记下每一口值得的味道</span></span>
-          </Link>
-          <nav className="site-nav">
-            <Link href="/entries/new">记一笔</Link>
-            <Link href="/recommend">AI 推荐</Link>
-            <Link href="/login">登录 / 账号</Link>
-          </nav>
-        </header>
-        <main>{children}</main>
-        <footer className="site-footer">美食地图 · 让好味道有迹可循</footer>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

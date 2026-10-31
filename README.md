@@ -2,9 +2,9 @@
 
 一个多人使用的美食记录与附近 AI 推荐 MVP。使用 Next.js 15 App Router、TypeScript、Supabase Postgres、Zod、jose、Tailwind CSS 与 Vitest，可部署到 Vercel。
 
-已实现用户名密码（默认）与手机号测试验证码（次要）登录、30 天 httpOnly JWT 会话、餐饮与物品的统一列表和详情、分类筛选、登记与本人删除、定位及手动经纬度、餐饮多菜系、物品两级分类、多标签、1–5 半星评分（0.5 分递增）、附近餐饮距离排序和 AI 推荐。页面文案为简体中文。
+已实现用户名密码（默认）与手机号测试验证码（次要）登录、30 天 localStorage JWT + Bearer 鉴权、餐饮与物品的统一列表和详情、分类筛选、登记与本人删除、定位及手动经纬度、餐饮多菜系、物品两级分类、多标签、1–5 半星评分（0.5 分递增）、附近餐饮距离排序和 AI 推荐。页面文案为简体中文。
 
-地图足迹使用 [Leaflet](https://leafletjs.com/) + [react-leaflet](https://react-leaflet.js.org/)，底图为 [OpenStreetMap](https://www.openstreetmap.org/copyright) 标准瓦片（需保留 © OpenStreetMap 署名）。首页展示有坐标登记的足迹（默认「我的」，可切换「全部」）；详情页有坐标时显示小地图；登记页支持地图点选与拖钉，并与定位/手填经纬度同步。本轮不包含独立 `/map` 页、路线或热力图。
+地图足迹使用 [Leaflet](https://leafletjs.com/) + [react-leaflet](https://react-leaflet.js.org/)，底图为 [OpenStreetMap](https://www.openstreetmap.org/copyright) 标准瓦片（需保留 © OpenStreetMap 署名）。首页两张卡片展示当前范围的餐饮/物品精确数量，并通过独立分页点位接口展示所有有坐标足迹（默认「我的」，可切换「全部」）；详情页有坐标时显示小地图；登记页支持地图点选与拖钉，并与定位/手填经纬度同步。本轮不包含独立 `/map` 页、路线或热力图。
 
 ## 本地运行
 
@@ -96,10 +96,10 @@ npm start
 
 1. 登录后点击「记一笔」，选择「餐饮店」或「物品」，填写名称和半星评分（1–5 分，0.5 分递增）。
 2. 餐饮选择菜系并填写经纬度；物品先选大类，再多选小类，地点可以留空（例如在家记录零食）。两种记录都可添加标签、地址和备注。
-3. 首页可按「全部 / 餐饮 / 物品」筛选。附近 5 公里只展示有坐标的餐饮；详情显示菜系或分类路径，创建者可以删除。
+3. 首页地图可按「全部 / 餐饮 / 物品」筛选；记录页支持范围、类型、名称搜索及每页 20 条分页。附近 5 公里只展示有坐标的餐饮；详情显示菜系或分类路径，创建者可以删除。
 4. 「AI 推荐」支持选择 1、5、10、20 公里范围。服务端仅查询 `kind=place` 且经纬度非空的附近餐饮，再调用 `${AI_BASE_URL}/chat/completions`。
 
-附近查询以最新 500 条有坐标的餐饮记录在内存中计算 Haversine 距离并排序，列表最多返回最新 100 条；这是 MVP 的规模限制。推荐最多向 AI 发送最近的 30 条候选，备注截断至 200 字，最多展示五项。服务端校验 JSON 结构、过滤未知候选 ID 与重复项，卡片名称来自数据库。
+附近查询以最新 500 条有坐标的餐饮记录在内存中计算 Haversine 距离并排序，旧 foods 列表最多返回最新 100 条；新记录列表使用服务端分页，首页计数与地图不受该上限限制。附近候选的 500 条上限仍是 MVP 的规模限制。推荐最多向 AI 发送最近的 30 条候选，备注截断至 200 字，最多展示五项。服务端校验 JSON 结构、过滤未知候选 ID 与重复项，卡片名称来自数据库。
 
 无附近样本时直接显示「附近暂无足够样本，先去登记几家美食吧」，不调用 AI、不编造店名。AI 缺少 Key、请求超时、上游错误或格式错误均显示中文错误，不影响美食列表和登记。AI 请求超时为 20 秒，Vercel 推荐函数最长执行时间为 30 秒。
 
@@ -109,7 +109,9 @@ npm start
 
 | 接口 | 返回 / 行为 |
 | --- | --- |
-| `GET /api/entries?kind=place\|item` | `{ entries }`；省略 `kind` 返回两种类型，非法类型返回 400 |
+| `GET /api/entries?scope=mine\|all&kind=place\|item&q=名称&page=1&pageSize=20` | `{ entries, total, page, pageSize }`；默认 mine，类型省略为全部，pageSize 上限 100，非法参数返回 400 |
+| `GET /api/dashboard/summary?scope=mine\|all` | 当前范围的餐饮、物品、各类型有位置记录精确计数 |
+| `GET /api/entries/map?scope=mine\|all&kind=all\|place\|item&cursor=...` | `{ points, nextCursor, hasMore }`，每批最多 500 个轻量点位，稳定游标分页 |
 | `POST /api/entries` | `{ entry }`，201；公共字段 `kind/name/rating/tagNames`，餐饮另传 `lat/lng/cuisineIds`，物品另传非空 `categoryIds`（UUID 数组），`lat/lng` 可省略；地址和备注选填 |
 | `GET /api/entries/[id]` | `{ entry }`，含菜系、小类及其父类名称、标签；无记录返回 404 |
 | `DELETE /api/entries/[id]` | `{ ok: true }`；非本人返回 403 |
@@ -130,22 +132,28 @@ npm start
 6. 以记录附近坐标请求推荐；以无记录坐标验证样本不足提示；退出后确认写入和推荐返回 401。
 7. 用第二个账号确认不能删除第一个账号的记录。
 
-生产 Cookie 使用 `secure`、`httpOnly`、`sameSite=lax`。浏览器定位需要 HTTPS（本地 localhost 除外）。Vercel 配置或更换环境变量后请重新部署。
+登录接口返回 `accessToken`、`expiresAt`、`user`；浏览器将 token 存在 `food-notes:access-token`，业务 API 通过 `Authorization: Bearer <token>` 验证签名、过期和用户存在性。旧 `food_session` Cookie 登录不再放行，更新后需重新登录一次。token 可被同源 JavaScript 读取；退出清除本地凭证，不提供已复制 JWT 的即时撤销。浏览器定位需要 HTTPS（本地 localhost 除外）。Vercel 配置或更换环境变量后请重新部署。
 
-## Hydration 排查
+## 字体与页面结构
 
-详情的记录日期统一显示 UTC 的 `YYYY-MM-DD`，保留原始时间戳在 `<time datetime>` 中，避免依赖运行环境的时区和 locale。详情数据在 `useEffect` 请求完成后显示，首屏服务端和客户端都先显示加载状态；因此旧日期格式并不能解释当前页面的初始 hydration 警告。
+界面使用本地系统字体：微软雅黑优先，依次回退至苹方、Segoe UI、Arial、系统 sans-serif。不使用 `next/font/google`、Google Fonts 外链或字体包；构建和运行均无需下载字体。
 
-根布局曾手动插入 Google Fonts 的 stylesheet / preconnect 链接（含 `crossOrigin="anonymous"`），这些节点会参与 React 与 Next App Router 的 head 管理，是属性差异的高概率来源；此前干净 Chrome 未复现警告，尚不能将其认定为已证实的根因。现将 Noto Sans SC（400/500/700）和 ZCOOL XiaoWei（400）都交给 `next/font/google` 构建时下载并自托管，通过固定 CSS 变量类使用，移除手写的 `<head>` 和字体链接。两者均支持 CJK unicode-range 分片；设置 `preload: false` 避免预加载大量分片。构建需能访问 Google Fonts，运行时无需外部字体请求。
+PC 提供底部居中 Dock；移动 Web 提供右下展开菜单。登录页独立展示；`/` 为统计与地图总览，`/entries` 为分页记录，`/entries/new` 为登记，`/recommend` 为共享餐饮 AI 推荐，`/account` 为账号。范围和列表筛选写入 URL；默认「我的」，显式 all 切到共享记录。新增、删除后重新查询，用户数据不使用公共缓存。
 
-`html` / `body` 不读取浏览器环境，也未添加 `suppressHydrationWarning`。评分初始状态为数字 `4`，滑块通过 `Number()` 更新并保留 `0.5` 步长。其他客户端组件使用固定初始状态，登录、字典和记录数据在 effect 中获取，定位与浏览器跳转仅在 effect 或事件中执行；本轮扫描未发现其他首屏环境分支。
+服务端首屏只输出稳定的登录验证壳，客户端完成 token 验证后挂载业务内容；地图继续动态加载，避免 Leaflet 访问 SSR 的浏览器对象。后台登录复核保留未保存表单；登录失效或换账号会清理业务子树。详情日期继续统一 UTC 的 YYYY-MM-DD。
 
-测试覆盖根布局属性稳定且没有手写字体链接、首页/登录/推荐/表单/分类选择器的 SSR → hydration、全部半星值和滑块的数字值，以及跨 UTC 日期边界的时间戳。Vitest 中字体函数用固定类名模拟，实际字体加载由生产构建验证。若本地仍出现警告，请保留控制台的组件栈和 `+` / `-` 属性差异，并在禁用扩展的新浏览器配置中重试；若差异是应用没有设置的 `html` / `body` 属性，应排查浏览器扩展的 DOM 注入。
-
-本轮生产构建的干净 Chrome 冒烟检查（模拟 API、临时测试会话）覆盖首页、登录、推荐、新建与详情页：没有控制台或页面错误，SSR 与 hydration 后的文档属性一致，没有外部 Google Fonts 请求，新建表单从默认 4 分改为 4.5 分后保留半星显示。`npm test` 的 129 项测试及 `npm run build` 均通过。
+可选执行 `supabase/migrations/005_dashboard_indexes.sql` 添加查询索引；使用 IF NOT EXISTS，可重复执行；本轮不新增业务表。
 
 ## 验证状态与文档
 
 单元与接口测试还覆盖 entries 类型校验、叶子分类校验、关联失败清理、匿名请求、物品所有权和旧 foods 接口的餐饮限制。基础测试覆盖距离计算、半星评分和多选校验、验证码存储与消费、会话签名、匿名请求与所有权限制、AI 配置与错误、未知 ID 过滤和无样本不调用 AI。Chromium 移动视口冒烟验证使用模拟 API，覆盖无地点物品登记及详情、带坐标和菜系的餐饮登记、三种首页筛选与附近餐饮/推荐展示；未发现浏览器运行时错误。未使用真实 Supabase 项目或真实 AI 凭据进行外部服务联调；部署后按上面的步骤完成验证。
 
-本轮按 [Entries 设计说明](docs/superpowers/specs/2026-10-28-entries-items-design.md) 与 [六项实施计划](docs/superpowers/plans/2026-10-28-entries-items.md) 实现；保留原有 [基础设计](docs/superpowers/specs/2026-10-28-food-platform-design.md)。用户名密码登录见 [设计说明](docs/superpowers/specs/2026-10-29-username-password-auth-design.md) 与 [实施计划](docs/superpowers/plans/2026-10-29-username-password-auth.md)。地图足迹、真实短信与物品 AI 推荐不在本轮范围内。
+早期 Entries 实现按 [Entries 设计说明](docs/superpowers/specs/2026-10-28-entries-items-design.md) 与 [六项实施计划](docs/superpowers/plans/2026-10-28-entries-items.md) 实现；保留原有 [基础设计](docs/superpowers/specs/2026-10-28-food-platform-design.md)。用户名密码登录见 [设计说明](docs/superpowers/specs/2026-10-29-username-password-auth-design.md) 与 [实施计划](docs/superpowers/plans/2026-10-29-username-password-auth.md)。地图足迹现已实现；真实短信与物品 AI 推荐仍不在当前范围。
+
+## 2026-10-31 双端改版验证
+
+本轮设计与执行记录见 [详细方案](docs/superpowers/specs/2026-10-31-responsive-dashboard-redesign.md)、[实施计划](docs/superpowers/plans/2026-10-31-responsive-dashboard.md) 和 [验证记录](docs/superpowers/plans/2026-10-31-responsive-dashboard-progress.md)。浏览器检查使用模拟业务 API，外部 Supabase 与真实 AI 尚需部署后联调。
+
+可选浏览器回归：启动生产预览后，在已安装 Playwright 的环境运行 `node scripts/smoke-dashboard.mjs`；可通过 `PLAYWRIGHT_MODULE`、`CHROME_EXECUTABLE`、`DASHBOARD_BASE_URL`、`DASHBOARD_QA_DIR` 指定工具、浏览器、预览地址与输出目录。脚本拦截业务接口，使用合成数据，不会写入真实数据库。
+
+本轮最终自动验证：34 个测试文件、180 项测试通过；lint 无错误（4 个既有 warning）；生产构建通过。
