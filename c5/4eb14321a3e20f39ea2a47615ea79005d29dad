@@ -1,0 +1,148 @@
+DESIGN.md
+  h_d083fb1648bfd3 1-7
+PRODUCT.md
+  h_d083fb1648bfd3 1-12
+README.md
+  h_d083fb1648bfd3 5,7,99,102,112-114,135,137,139,141,143,145,151-159
+app/account/page.tsx
+  h_d083fb1648bfd3 1-64
+app/api/auth/login/route.ts
+  h_d083fb1648bfd3 1-6,13-14,16-17,24-25
+app/api/auth/logout/route.ts
+  h_d083fb1648bfd3 1-9
+app/api/auth/me/route.ts
+  h_d083fb1648bfd3 1-4,6,8-9,12-14,17-18,31-32
+app/api/auth/send-otp/route.ts
+  h_d083fb1648bfd3 1-12,14-15
+app/api/auth/verify-otp/route.ts
+  h_d083fb1648bfd3 1-21,23-24
+app/api/categories/route.ts
+  h_d083fb1648bfd3 1-5,8-17,19-20
+app/api/cuisines/route.ts
+  h_d083fb1648bfd3 1-19
+app/api/dashboard/summary/route.ts
+  h_d083fb1648bfd3 1-20
+app/api/entries/[id]/route.ts
+  h_d083fb1648bfd3 1-6,8,10,12-16,18,20,23-30,32-35,37-38
+app/api/entries/map/route.ts
+  h_d083fb1648bfd3 1-21
+app/api/entries/nearby/route.ts
+  h_d083fb1648bfd3 1-6,9-26,28-29
+app/api/entries/route.ts
+  h_d083fb1648bfd3 1-6,9-19,23,25-31,33-34
+app/api/foods/[id]/route.ts
+  h_d083fb1648bfd3 1-40
+app/api/foods/nearby/route.ts
+  h_d083fb1648bfd3 1-18
+app/api/foods/route.ts
+  h_d083fb1648bfd3 1-13,17,20-30,32-33
+app/api/recommend/route.ts
+  h_d083fb1648bfd3 1-34,36-37
+app/api/tags/route.ts
+  h_d083fb1648bfd3 1-26
+app/entries/[id]/page.tsx
+  h_d083fb1648bfd3 1-22,24-29,31-48,51,53-62,64-74,76-142
+app/entries/new/page.tsx
+  h_d083fb1648bfd3 1-11
+app/entries/page.tsx
+  h_d083fb1648bfd3 1-260
+app/globals.css
+  h_d083fb1648bfd3 3-10,14-30,34,36-45,51-53,55-59,61-66,68-70,72-76,78-83,85-87,89-90,92-93,95-99,103-112,115,118-121,123,128-130,134,138-139,141-142,144,146,148-149,151-153,155-170,172,174-175,177-178,180-185,187-194,196,198-205,207-209,211-212,214-215,217-222,224-236,238-241,243,245-246,248-254,256-260,262-263,265-269,271-275,277-278,282-285,287-296,298-301,303-308,310-311,313-318,320-321,323-325,327-328,334-335,337-338,340-351,353-355,357-1147
+app/layout.tsx
+  h_d083fb1648bfd3 2,6-9,11-13,15,17
+app/login/page.tsx
+  h_d083fb1648bfd3 1-6,8,12-17,19-20,23-27,32,34-38,48,50-54,56,67-71,73-76,81-86,89-94,98,128-130,141-146
+app/page.tsx
+  h_d083fb1648bfd3 1-30,32,34-43,46-58,60-181,183-188,190-195,197-224,226-239,241-266,268-276
+app/recommend/page.tsx
+  h_d083fb1648bfd3 1-83
+components/EntryCard.tsx
+  h_d083fb1648bfd3 1-62
+components/EntryForm.tsx
+  h_d083fb1648bfd3 1-11,14-27,30-40,42-44,46-48,50-51,56-78,80-162
+components/layout/AppDock.tsx
+  h_d083fb1648bfd3 1-76
+components/layout/AppShell.tsx
+  h_d083fb1648bfd3 1-83
+components/layout/Icon.tsx
+  h_d083fb1648bfd3 1-67
+components/layout/PageHeader.tsx
+  h_d083fb1648bfd3 1-20
+components/layout/ScopeSwitch.tsx
+  h_d083fb1648bfd3 1-23
+components/map/DashboardMap.tsx
+  h_d083fb1648bfd3 1-255
+components/map/MapTileLayer.tsx
+  h_d083fb1648bfd3 1-5,7-9,11-46
+components/map/dynamic.tsx
+  h_d083fb1648bfd3 1,3,5-7,9-15,17-23,26-31
+docs/superpowers/plans/2026-10-31-responsive-dashboard-progress.md
+  h_d083fb1648bfd3 1-44
+docs/superpowers/plans/2026-10-31-responsive-dashboard.md
+  h_d083fb1648bfd3 1-64
+docs/superpowers/specs/2026-10-31-responsive-dashboard-redesign.md
+  h_d083fb1648bfd3 1-171
+lib/auth/context.tsx
+  h_d083fb1648bfd3 1-143
+lib/auth/redirect.ts
+  h_d083fb1648bfd3 1-24
+lib/auth/requestUser.ts
+  h_d083fb1648bfd3 1-3,5-17
+lib/auth/token-store.ts
+  h_d083fb1648bfd3 1-21
+lib/browser.ts
+  h_d083fb1648bfd3 1-49
+lib/entries.ts
+  h_d083fb1648bfd3 1-4,7-21,23,25-27,34-39,42,44-52,56-64,69-83,85-90,93,97-105,108-116,119-127,131-137,139-141,146-150,155-245
+lib/entry-types.ts
+  h_d083fb1648bfd3 1-25
+lib/geo/clusters.ts
+  h_d083fb1648bfd3 1-27
+lib/http.ts
+  h_d083fb1648bfd3 1,4-9,17,21-25,29-66,68-77
+lib/map-loader.ts
+  h_d083fb1648bfd3 1-20
+lib/validations/entry-query.ts
+  h_d083fb1648bfd3 1-40
+package.json
+  h_d083fb1648bfd3 1-44
+scripts/smoke-dashboard.mjs
+  h_d083fb1648bfd3 1-350
+supabase/migrations/005_dashboard_indexes.sql
+  h_d083fb1648bfd3 1-4
+tests/api/dashboard.test.ts
+  h_d083fb1648bfd3 1-68
+tests/api/entries.test.ts
+  h_d083fb1648bfd3 2,4,22,25-26,69
+tests/auth/bearer.test.ts
+  h_d083fb1648bfd3 1-62
+tests/auth/context.test.ts
+  h_d083fb1648bfd3 1-75
+tests/auth/redirect.test.ts
+  h_d083fb1648bfd3 1-21
+tests/components/app-dock.test.ts
+  h_d083fb1648bfd3 1-43
+tests/components/hydration.test.ts
+  h_d083fb1648bfd3 16,25,84
+tests/components/map-tile-error.test.ts
+  h_d083fb1648bfd3 1-52
+tests/components/system-fonts.test.ts
+  h_d083fb1648bfd3 1-10
+tests/entries/scoped.test.ts
+  h_d083fb1648bfd3 1-120
+tests/geo/dashboard.test.ts
+  h_d083fb1648bfd3 1-67
+tests/http/bearer-browser.test.ts
+  h_d083fb1648bfd3 1-72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c54eb14321a3e20f39ea2a47615ea79005d29dad",
+  "prompts": {},
+  "humans": {
+    "h_d083fb1648bfd3": {
+      "author": "sxy <545231960@qq.com>"
+    }
+  }
+}
