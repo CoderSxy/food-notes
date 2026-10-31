@@ -3,8 +3,10 @@ import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import RatingStars from '@/components/RatingStars';
+import { DynamicEntryMiniMap } from '@/components/map/dynamic';
 import type { Entry } from '@/lib/entries';
 import { requestJson } from '@/lib/browser';
+import { hasCoords } from '@/lib/geo/map';
 export default function Detail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params), router = useRouter();
   const [entry, setEntry] = useState<Entry | null>(null), [userId, setUserId] = useState(''), [error, setError] = useState(''), [busy, setBusy] = useState(false);
@@ -24,7 +26,10 @@ export default function Detail({ params }: { params: Promise<{ id: string }> }) 
   return <section className="narrow"><p><Link href="/">← 返回美食地图</Link></p>{error && <p className="error" role="alert">{error}</p>}
     {entry ? <article className="panel detail-card"><span className="pill">{entry.kind === 'place' ? '餐饮' : '物品'}</span><h1 className="headline">{entry.name}</h1>
       <p className="rating"><RatingStars value={entry.rating}/> · {entry.rating} 分</p><p>{entry.address_text || '未填写详细地址'}</p>
-      <p className="muted">{entry.lat !== null && entry.lng !== null ? `纬度 ${entry.lat} / 经度 ${entry.lng}` : '未记录地点'}</p>
+      <p className="muted">{hasCoords(entry) ? `纬度 ${entry.lat} / 经度 ${entry.lng}` : '未记录地点'}</p>
+      {hasCoords(entry) && (
+        <DynamicEntryMiniMap lat={entry.lat} lng={entry.lng} name={entry.name} />
+      )}
       <div>{entry.kind === 'place' ? entry.cuisines.map(c => <span className="pill" key={c.id}>{c.name}</span>) : entry.categories.map(c => <span className="pill" key={c.id}>{c.parent ? `${c.parent.name} / ` : ''}{c.name}</span>)}
         {entry.tags.map(t => <span className="pill" key={t.id}>#{t.name}</span>)}</div>
       <p className="note">{entry.note || '暂时没有备注'}</p>

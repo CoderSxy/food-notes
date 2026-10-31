@@ -8,3 +8,8 @@ export const DynamicEntriesMap = dynamic(() => import('@/components/map/EntriesM
   ssr: false,
   loading,
 });
+
+export const DynamicEntryMiniMap = dynamic(() => import('@/components/map/EntryMiniMap'), {
+  ssr: false,
+  loading,
+});
