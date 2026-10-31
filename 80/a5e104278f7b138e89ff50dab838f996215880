@@ -1,0 +1,183 @@
+components/layout/ScopeSwitch.tsx
+  s_6d95aaf4ef036f::t_a5738da5b83b46 2-3,5-6,8,10,12-17,19,21,23
+  s_6d95aaf4ef036f::t_56c02358c73478 1,4,7,9,11,18,20,22
+app/globals.css
+  s_6d95aaf4ef036f::t_532d59f4f3d848 3-10,14-30,34,36-45,51-53,55-59,61-66,68-70,72-76,78-83,85-87,89-90,92-93,95-99,103-112,115,118-121,123,128-130,134,138-139,141-142,144,146,148-149,151-153,155-170,172,174-175,177-178,180-185,187-194,196,198-205,207-209,211-212,214-215,217-222,224-236,238-241,243,245-246,248-254,256-260,262-263,265-269,271-275,277-278,282-285,287-296,298-301,303-308,310-311,313-318,320-321,323-325,327-328,334-335,337-338,340-351,353-355,357-1099,1102,1105-1112,1115-1116,1118-1119,1121,1125,1128,1132-1133
+  s_6d95aaf4ef036f::t_a72e55091da21c 1101,1113-1114,1120,1124,1134-1147
+  s_6d95aaf4ef036f::t_3112ca29d12b27 1100,1103-1104,1117,1122-1123,1126-1127,1129-1131
+tests/http/bearer-browser.test.ts
+  s_6d95aaf4ef036f::t_08f383df7d3fe2 1,4-7,25-26,28,31,34,38,40
+  s_6d95aaf4ef036f::t_daad73301936fb 41-72
+  s_6d95aaf4ef036f::t_4edf0d08681a78 2-3,8-24,27,29-30,32-33,35-37,39
+app/account/page.tsx
+  s_6d95aaf4ef036f::t_532d59f4f3d848 1-64
+app/entries/page.tsx
+  s_6d95aaf4ef036f::t_532d59f4f3d848 1-260
+README.md
+  s_6d95aaf4ef036f::t_ea009965580ba4 156-159
+  s_6d95aaf4ef036f::t_a71e09509a1dd3 151
+  s_6d95aaf4ef036f::t_6ebc9b983a2cba 5,7,99,102,112-114,135,137,139,141,143,145,152-155
+app/api/entries/[id]/route.ts
+  s_6d95aaf4ef036f::t_532d59f4f3d848 1-6,8,10,12-16,18,20,23-30,32-35,37-38
+docs/superpowers/plans/2026-10-31-responsive-dashboard-progress.md
+  s_6d95aaf4ef036f::t_ea009965580ba4 8-42
+  s_6d95aaf4ef036f::t_37c36da349ddc2 43-44
+  s_6d95aaf4ef036f::t_903e0e132289ff 1-7
+DESIGN.md
+  s_6d95aaf4ef036f::t_a5738da5b83b46 4
+  s_6d95aaf4ef036f::t_a582746db0432f 1-3,5-7
+app/api/dashboard/summary/route.ts
+  s_6d95aaf4ef036f::t_532d59f4f3d848 1-20
+components/layout/AppShell.tsx
+  s_6d95aaf4ef036f::t_532d59f4f3d848 1-83
+components/layout/Icon.tsx
+  s_6d95aaf4ef036f::t_532d59f4f3d848 1-67
+docs/superpowers/specs/2026-10-31-responsive-dashboard-redesign.md
+  s_6d95aaf4ef036f::t_268b0156b8ea55 1-2,4-62,64-171
+  s_6d95aaf4ef036f::t_513a8e0edf9768 3,63
+app/api/tags/route.ts
+  s_6d95aaf4ef036f::t_532d59f4f3d848 1-26
+lib/auth/redirect.ts
+  s_6d95aaf4ef036f::t_238f84532a3c6c 1-2,4-6,9-10,12-16,18-19,23-24
+  s_6d95aaf4ef036f::t_a55a02606e5026 3,7-8,11,17,20-22
+components/layout/PageHeader.tsx
+  s_6d95aaf4ef036f::t_532d59f4f3d848 1-20
+tests/geo/dashboard.test.ts
+  s_6d95aaf4ef036f::t_4502da31d87b7d 5-6,8-12,14,17,19-20,22,24-29,31-32,35-36,39-41,43,45-49,51-54,56-58,60-61,63,67
+  s_6d95aaf4ef036f::t_5acc2084e68642 1-4,7,13,15-16,18,21,23,30,33-34,37-38,42,44,50,55,59,62,64-66
+app/api/entries/map/route.ts
+  s_6d95aaf4ef036f::t_532d59f4f3d848 1-21
+app/api/auth/send-otp/route.ts
+  s_6d95aaf4ef036f::t_532d59f4f3d848 1-12,14-15
+app/api/foods/[id]/route.ts
+  s_6d95aaf4ef036f::t_532d59f4f3d848 1-40
+app/api/entries/route.ts
+  s_6d95aaf4ef036f::t_532d59f4f3d848 1-6,9-19,23,25-31,33-34
+components/map/DashboardMap.tsx
+  s_6d95aaf4ef036f::t_a5738da5b83b46 4-8,18-22,24-26,28-29,32-181,183-185,187-188,190-207,209-212,214,216-220,222-231,233-238,240-243,245-248,250-251,253,255
+  s_6d95aaf4ef036f::t_e1ae3b72e95eb1 1-3,9-17,23,27,30-31,182,186,189,208,213,215,221,232,239,244,249,252,254
+app/entries/[id]/page.tsx
+  s_6d95aaf4ef036f::t_532d59f4f3d848 1-22,24-29,31-48,51,53-62,64-74,76-142
+app/api/auth/logout/route.ts
+  s_6d95aaf4ef036f::t_532d59f4f3d848 1-9
+tests/auth/redirect.test.ts
+  s_6d95aaf4ef036f::t_08f383df7d3fe2 6-7,19,21
+  s_6d95aaf4ef036f::t_edf525405e4893 1-5,8-18,20
+components/map/MapTileLayer.tsx
+  s_6d95aaf4ef036f::t_a72e55091da21c 9,11-30,44-45
+  s_6d95aaf4ef036f::t_f8e1ec84362c4a 1-5,7-8,31-43,46
+app/page.tsx
+  s_6d95aaf4ef036f::t_532d59f4f3d848 1-30,32,34-43,46-58,60-181,183-188,190-195,197-224,226-239,241-266,268-276
+docs/superpowers/plans/2026-10-31-responsive-dashboard.md
+  s_6d95aaf4ef036f::t_ea009965580ba4 3-64
+  s_6d95aaf4ef036f::t_e9867fb3c96b75 1-2
+tests/auth/bearer.test.ts
+  s_6d95aaf4ef036f::t_daad73301936fb 46-62
+  s_6d95aaf4ef036f::t_08f383df7d3fe2 2,4,7,10,13-14,17-18,24,26-27,31,33-35,37-39,44-45
+  s_6d95aaf4ef036f::t_19a7e880551bae 1,3,5-6,8-9,11-12,15-16,19-23,25,28-30,32,36,40-43
+lib/geo/clusters.ts
+  s_6d95aaf4ef036f::t_a5738da5b83b46 2-5,7-10,12-15,17-24,26-27
+  s_6d95aaf4ef036f::t_271507516d5d71 1,6,11,16,25
+app/api/foods/route.ts
+  s_6d95aaf4ef036f::t_532d59f4f3d848 1-13,17,20-30,32-33
+app/api/foods/nearby/route.ts
+  s_6d95aaf4ef036f::t_532d59f4f3d848 1-18
+tests/components/system-fonts.test.ts
+  s_6d95aaf4ef036f::t_4502da31d87b7d 10
+  s_6d95aaf4ef036f::t_c5897ced130587 1-9
+lib/map-loader.ts
+  s_6d95aaf4ef036f::t_a5738da5b83b46 2-5,7-13,15-20
+  s_6d95aaf4ef036f::t_b5d9928ba17179 1,6,14
+app/api/cuisines/route.ts
+  s_6d95aaf4ef036f::t_532d59f4f3d848 1-19
+app/entries/new/page.tsx
+  s_6d95aaf4ef036f::t_532d59f4f3d848 1-11
+app/recommend/page.tsx
+  s_6d95aaf4ef036f::t_532d59f4f3d848 1-83
+app/login/page.tsx
+  s_6d95aaf4ef036f::t_532d59f4f3d848 1-6,8,12-17,19-20,23-27,32,34-38,48,50-54,56,67-71,73-76,81-86,89-94,98,128-130,141-146
+tests/components/map-tile-error.test.ts
+  s_6d95aaf4ef036f::t_a72e55091da21c 47,49-51
+  s_6d95aaf4ef036f::t_e6b5957583d926 46,48,52
+  s_6d95aaf4ef036f::t_c1110c379eb004 1,3-7,11-12,14,17-19,21-24,26-27,29,31-32,34,38,40,44-45
+  s_6d95aaf4ef036f::t_69889537b23258 2,8-10,13,15-16,20,25,28,30,33,35-37,39,41-43
+app/layout.tsx
+  s_6d95aaf4ef036f::t_532d59f4f3d848 6-9,11-13,15
+  s_6d95aaf4ef036f::t_0268444f54d11c 2,17
+tests/entries/scoped.test.ts
+  s_6d95aaf4ef036f::t_95b45cdd278845 2-3,5,7-11,13,15-16,25-30,33,36-37,39,45,51,53,58,65,72,75,81,87,91,93,96,98-100,103-106,108-109,112-115,119-120
+  s_6d95aaf4ef036f::t_4f3f1bf5bf7a9d 1,4,6,12,14,17-24,31-32,34-35,38,40-44,46-50,52,54-57,59-64,66-71,73-74,76-80,82-86,88-90,92,94-95,97,101-102,107,110-111,116-118
+components/map/dynamic.tsx
+  s_6d95aaf4ef036f::t_a5738da5b83b46 29-30
+  s_6d95aaf4ef036f::t_1ed7e4f295e3c4 1,3,5-7,9-15,17-23,26-28,31
+components/layout/AppDock.tsx
+  s_6d95aaf4ef036f::t_532d59f4f3d848 1-34,38-75
+  s_6d95aaf4ef036f::t_c1110c379eb004 35-37
+  s_6d95aaf4ef036f::t_23a7c682e35266 76
+app/api/categories/route.ts
+  s_6d95aaf4ef036f::t_532d59f4f3d848 1-5,8-17,19-20
+app/api/auth/login/route.ts
+  s_6d95aaf4ef036f::t_532d59f4f3d848 1-6,13-14,16-17,24-25
+app/api/auth/me/route.ts
+  s_6d95aaf4ef036f::t_532d59f4f3d848 1-4,6,8-9,12-14,17-18,31-32
+app/api/entries/nearby/route.ts
+  s_6d95aaf4ef036f::t_532d59f4f3d848 1-6,9-26,28-29
+app/api/recommend/route.ts
+  s_6d95aaf4ef036f::t_532d59f4f3d848 1-34,36-37
+app/api/auth/verify-otp/route.ts
+  s_6d95aaf4ef036f::t_532d59f4f3d848 1-21,23-24
+PRODUCT.md
+  s_6d95aaf4ef036f::t_ddc9139d71760b 1-12
+components/EntryCard.tsx
+  s_6d95aaf4ef036f::t_c4f7e1fefec637 1-62
+components/EntryForm.tsx
+  s_6d95aaf4ef036f::t_438de4a8a8b92c 1-11,14-27,30-40,42-44,46-48,50-51,56-78,80-162
+lib/auth/context.tsx
+  s_6d95aaf4ef036f::t_fb5e7ef76d3968 1-143
+lib/auth/requestUser.ts
+  s_6d95aaf4ef036f::t_10cc6229aaba09 1-3,5-17
+lib/auth/token-store.ts
+  s_6d95aaf4ef036f::t_14d5a5a852cf90 1-21
+lib/browser.ts
+  s_6d95aaf4ef036f::t_cbbcff848a6786 1-49
+lib/entries.ts
+  s_6d95aaf4ef036f::t_92ae799f96b490 1-4,7-21,23,25-27,34-39,42,44-52,56-64,69-83,85-90,93,97-105,108-116,119-127,131-137,139-141,146-150,155-245
+lib/entry-types.ts
+  s_6d95aaf4ef036f::t_7a47005bd47b0c 1-25
+lib/http.ts
+  s_6d95aaf4ef036f::t_cbcf9d7f6bd3c1 1,4-9,17,21-25,29-66,68-77
+lib/validations/entry-query.ts
+  s_6d95aaf4ef036f::t_90ae3933f7407c 1-40
+package.json
+  s_6d95aaf4ef036f::t_80fef7ac2ae63a 1-44
+scripts/smoke-dashboard.mjs
+  s_6d95aaf4ef036f::t_c24ead45ba4594 1-350
+supabase/migrations/005_dashboard_indexes.sql
+  s_6d95aaf4ef036f::t_b06d0d3271abdd 1-4
+tests/api/dashboard.test.ts
+  s_6d95aaf4ef036f::t_7f16880950dec4 1-68
+tests/api/entries.test.ts
+  s_6d95aaf4ef036f::t_5aa8cea4ae4fe7 2,4,22,25-26,69
+tests/auth/context.test.ts
+  s_6d95aaf4ef036f::t_16b677e9bed45e 1-75
+tests/components/app-dock.test.ts
+  s_6d95aaf4ef036f::t_7f0973145e3a4a 1-43
+tests/components/hydration.test.ts
+  s_6d95aaf4ef036f::t_5ebd6e543d7192 16,25,84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "80a5e104278f7b138e89ff50dab838f996215880",
+  "prompts": {},
+  "sessions": {
+    "s_6d95aaf4ef036f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1928d-ab74-7ef2-ab8b-a34c847f61ce",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
