@@ -54,10 +54,10 @@ function groupPhotos(photos: EntryPhoto[]) {
   }
   return grouped;
 }
-export async function attachPhotos(
-  entries: Entry[],
+export async function attachPhotos<T extends Entry>(
+  entries: T[],
   opts?: { full?: boolean },
-): Promise<Entry[]> {
+): Promise<T[]> {
   if (!entries.length) return entries;
   const grouped = groupPhotos(
     await listPhotosForEntries(entries.map((entry) => entry.id)),

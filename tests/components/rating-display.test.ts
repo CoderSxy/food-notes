@@ -24,4 +24,12 @@ describe('rating displays', () => {
     const fills = [...container.querySelectorAll<HTMLElement>('.rating-star-fill')];
     expect(fills.map(fill => fill.style.width)).toEqual(['100%', '100%', '100%', '100%', '50%']);
   });
+  it('shows a cover image when the entry has cover_photo_url', () => {
+    const { container } = render(createElement(EntryCard, {
+      entry: { ...entry, cover_photo_url: 'https://cdn.example/cover.webp' },
+    }));
+    expect(container.querySelector('.entry-cover img')?.getAttribute('src')).toBe(
+      'https://cdn.example/cover.webp',
+    );
+  });
 });

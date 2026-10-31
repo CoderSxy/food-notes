@@ -21,3 +21,11 @@ export type EntryPhoto = {
   content_type: string;
   created_at: string;
 };
+
+export function nextPhotoSort(photos: Pick<EntryPhoto, "sort">[]): number {
+  const used = new Set(photos.map((photo) => photo.sort));
+  for (let sort = 0; sort < MAX_PHOTOS; sort++) {
+    if (!used.has(sort)) return sort;
+  }
+  throw new Error("最多 3 张照片");
+}

@@ -3,12 +3,14 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { safeNext } from "@/lib/auth/redirect";
 import { requestJson, jsonBody } from "@/lib/browser";
+import { uploadEntryPhoto } from "@/lib/browser-photos";
 import type { DictionaryItem, Entry } from "@/lib/entries";
 import CuisinePicker from "./CuisinePicker";
 import CategoryPicker from "./CategoryPicker";
 import TagPicker from "./TagPicker";
 import StarRating from "./StarRating";
 import LocationField from "./LocationField";
+import PhotoPicker, { type PickerPhoto } from "./PhotoPicker";
 export default function EntryForm() {
   const router = useRouter();
   const [kind, setKind] = useState<"place" | "item">("place");
@@ -25,14 +27,20 @@ export default function EntryForm() {
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [ready, setReady] = useState(false);
+  const [photos, setPhotos] = useState<PickerPhoto[]>([]);
+  const [storageReady, setStorageReady] = useState(false);
   async function load() {
     try {
-      const [c, t] = await Promise.all([
+      const [c, t, storage] = await Promise.all([
         requestJson<{ cuisines: DictionaryItem[] }>("/api/cuisines"),
         requestJson<{ tags: DictionaryItem[] }>("/api/tags"),
+        requestJson<{ configured: boolean }>("/api/photos/status").catch(
+          () => ({ configured: false }),
+        ),
       ]);
       setCuisines(c.cuisines);
       setSuggestions(t.tags.map((t) => t.name));
+      setStorageReady(storage.configured);
       setReady(true);
       setError("");
     } catch (e) {
@@ -66,11 +74,22 @@ export default function EntryForm() {
           ...(kind === "place" ? { cuisineIds } : { categoryIds }),
         }),
       );
+      let photoFailed = false;
+      for (const [index, photo] of photos.entries()) {
+        if (!photo.file) continue;
+        try {
+          await uploadEntryPhoto(entry.id, photo.file, index);
+        } catch {
+          photoFailed = true;
+        }
+      }
       const from = safeNext(
         new URLSearchParams(window.location.search).get("from") ||
           "/entries?scope=mine",
       );
-      router.push(`/entries/${entry.id}?from=${encodeURIComponent(from)}`);
+      const query = new URLSearchParams({ from });
+      if (photoFailed) query.set("photoError", "1");
+      router.push(`/entries/${entry.id}?${query.toString()}`);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -133,6 +152,12 @@ export default function EntryForm() {
         onChange={(e) => setAddress(e.target.value)}
       />
       <TagPicker value={tags} onChange={setTags} suggestions={suggestions} />
+      <PhotoPicker
+        value={photos}
+        onChange={setPhotos}
+        disabled={busy}
+        storageReady={storageReady}
+      />
       <label htmlFor="note">备注（选填）</label>
       <textarea
         id="note"

@@ -4,12 +4,12 @@ export {
   ALLOWED_CONTENT_TYPES,
   MAX_BYTES,
   MAX_PHOTOS,
+  nextPhotoSort,
   type AllowedContentType,
   type EntryPhoto,
 } from "@/lib/photo-constants";
 import {
   ALLOWED_CONTENT_TYPES,
-  MAX_PHOTOS,
   type AllowedContentType,
   type EntryPhoto,
 } from "@/lib/photo-constants";
@@ -53,14 +53,6 @@ export function coverUrlFromPhotos(photos: EntryPhoto[]): string | null {
     photos[0]?.public_url ??
     null
   );
-}
-
-export function nextPhotoSort(photos: EntryPhoto[]): number {
-  const used = new Set(photos.map((photo) => photo.sort));
-  for (let sort = 0; sort < MAX_PHOTOS; sort++) {
-    if (!used.has(sort)) return sort;
-  }
-  throw new HttpError("最多 3 张照片", 400);
 }
 
 export async function countPhotos(entryId: string): Promise<number> {

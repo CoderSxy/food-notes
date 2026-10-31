@@ -8,6 +8,7 @@ import { DynamicEntryMiniMap } from "@/components/map/dynamic";
 import type { Entry } from "@/lib/entries";
 import { requestJson } from "@/lib/browser";
 import { hasCoords } from "@/lib/geo/map";
+import EntryPhotos from "@/components/EntryPhotos";
 export default function Detail({
   params,
 }: {
@@ -20,24 +21,29 @@ export default function Detail({
     [userId, setUserId] = useState(""),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
+  const [storageReady, setStorageReady] = useState(false);
   useEffect(() => {
-    setSource(
-      safeNext(
-        new URLSearchParams(window.location.search).get("from") ||
-          "/entries?scope=mine",
-      ),
-    );
+    const params = new URLSearchParams(window.location.search);
+    setSource(safeNext(params.get("from") || "/entries?scope=mine"));
     let active = true;
     setEntry(null);
-    setError("");
+    setError(
+      params.get("photoError") === "1"
+        ? "记录已保存，部分照片上传失败，可在本页重试"
+        : "",
+    );
     Promise.all([
       requestJson<{ entry: Entry }>(`/api/entries/${encodeURIComponent(id)}`),
       requestJson<{ user: { userId: string } }>("/api/auth/me"),
+      requestJson<{ configured: boolean }>("/api/photos/status").catch(() => ({
+        configured: false,
+      })),
     ])
-      .then(([e, u]) => {
+      .then(([e, u, storage]) => {
         if (active) {
           setEntry(e.entry);
           setUserId(u.user.userId);
+          setStorageReady(storage.configured);
         }
       })
       .catch((e) => {
@@ -114,6 +120,22 @@ export default function Detail({
               </span>
             ))}
           </div>
+          <EntryPhotos
+            entryId={entry.id}
+            photos={entry.photos ?? []}
+            isOwner={entry.user_id === userId}
+            storageReady={storageReady}
+            onChange={(photos) =>
+              setEntry({
+                ...entry,
+                photos,
+                cover_photo_url:
+                  photos.find((photo) => photo.sort === 0)?.public_url ??
+                  photos[0]?.public_url ??
+                  null,
+              })
+            }
+          />
           <p className="note">{entry.note || "暂时没有备注"}</p>
           {/* Use the UTC calendar date so rendering never depends on the host timezone or locale. */}
           <p className="muted">

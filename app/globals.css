@@ -1075,6 +1075,14 @@ input[type="range"] {
   .preview-row {
     font-size: 13px;
   }
+  .photo-thumbs,
+  .photo-gallery {
+    gap: 8px;
+  }
+  .photo-thumb-actions button {
+    font-size: 11px;
+    padding: 3px 6px;
+  }
   .inline-error {
     font-size: 12px;
   }
@@ -1145,4 +1153,105 @@ input[type="range"] {
   color: var(--muted);
   font-size: 11px;
   pointer-events: none;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.photo-picker {
+  margin: 8px 0 4px;
+}
+.photo-picker > .row.between label {
+  margin: 16px 0 7px;
+}
+.photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.photo-actions button {
+  min-height: 40px;
+  padding: 8px 14px;
+}
+.photo-thumbs,
+.photo-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.photo-thumb,
+.photo-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--stamp);
+  border: 1px solid #ead8ce;
+  aspect-ratio: 1;
+}
+.photo-thumb img,
+.photo-frame img,
+.entry-cover img,
+.map-cover,
+.preview-cover {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.photo-cover-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--terracotta);
+  color: white;
+  font-size: 11px;
+}
+.photo-thumb-actions {
+  position: absolute;
+  inset: auto 6px 6px 6px;
+  display: flex;
+  gap: 6px;
+}
+.photo-thumb-actions button {
+  flex: 1;
+  min-height: 32px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.entry-cover {
+  overflow: hidden;
+  border-radius: 12px;
+  margin: 0 0 14px;
+  aspect-ratio: 16 / 9;
+  background: var(--stamp);
+}
+.photo-gallery {
+  margin: 16px 0 8px;
+}
+.preview-cover,
+.map-cover {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--stamp);
+}
+.map-cover {
+  width: 100%;
+  height: 88px;
+  border-radius: 8px;
+  margin: 0 0 8px;
 }
