@@ -1,6 +1,19 @@
 import Link from "next/link";
+import EntryCoverCarousel from "@/components/EntryCoverCarousel";
 import RatingStars from "@/components/RatingStars";
 import type { Entry } from "@/lib/entries";
+import type { EntryPhotoThumb } from "@/lib/photo-constants";
+
+export function slidesForEntry(
+  entry: Pick<Entry, "photos" | "cover_photo_url">,
+): EntryPhotoThumb[] {
+  if (entry.photos?.length)
+    return [...entry.photos].sort((a, b) => a.sort - b.sort);
+  if (entry.cover_photo_url)
+    return [{ id: "cover", public_url: entry.cover_photo_url, sort: 0 }];
+  return [];
+}
+
 export default function EntryCard({
   entry,
   source,
@@ -15,11 +28,7 @@ export default function EntryCard({
       : "未记录地点");
   return (
     <article className="panel entry-card">
-      {entry.cover_photo_url && (
-        <div className="entry-cover">
-          <img src={entry.cover_photo_url} alt="" />
-        </div>
-      )}
+      <EntryCoverCarousel photos={slidesForEntry(entry)} />
       <div className="row between">
         <h2>
           <Link

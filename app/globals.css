@@ -1232,11 +1232,50 @@ input[type="range"] {
   font-size: 12px;
 }
 .entry-cover {
+  position: relative;
   overflow: hidden;
   border-radius: 12px;
   margin: 0 0 14px;
   aspect-ratio: 16 / 9;
   background: var(--stamp);
+}
+.entry-cover-track {
+  display: flex;
+  height: 100%;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  scrollbar-width: none;
+}
+.entry-cover-track::-webkit-scrollbar {
+  display: none;
+}
+.entry-cover-slide {
+  flex: 0 0 100%;
+  min-width: 100%;
+  height: 100%;
+  scroll-snap-align: start;
+}
+.entry-cover-dots {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 8px;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+.entry-cover-dot {
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+}
+.entry-cover-dot[aria-current="true"] {
+  background: var(--terracotta);
 }
 .photo-gallery {
   margin: 16px 0 8px;
