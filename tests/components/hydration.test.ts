@@ -14,6 +14,13 @@ import Recommend from '@/app/recommend/page';
 import CategoryPicker from '@/components/CategoryPicker';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock('next/dynamic', () => ({
+  default: () => {
+    const Stub = () => null;
+    Stub.displayName = 'DynamicStub';
+    return Stub;
+  },
+}));
 // Next's compiler supplies these static classes in production; Vite does not
 // transform next/font calls. The production build verifies the real font loader.
 vi.mock('next/font/google', () => ({

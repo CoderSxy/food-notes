@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Noto_Sans_SC, ZCOOL_XiaoWei } from "next/font/google";
+import "leaflet/dist/leaflet.css";
 import "./globals.css";
 
 // Let Next own font assets and head hints. Disable preloading because these CJK
