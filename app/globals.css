@@ -1389,6 +1389,9 @@ button.icon-button-danger:hover {
 .choice-buttons--wrap {
   flex-wrap: wrap;
 }
+.choice-buttons--stack {
+  flex-direction: column;
+}
 .choice-button {
   position: relative;
   display: inline-flex;
