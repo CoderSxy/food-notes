@@ -48,6 +48,9 @@ export default function EntryForm({
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [ready, setReady] = useState(false);
+  const [price, setPrice] = useState(
+    entry?.price != null ? String(entry.price) : "",
+  );
   const [photos, setPhotos] = useState<PickerPhoto[]>([]);
   const [savedPhotos, setSavedPhotos] = useState(entry?.photos ?? []);
   const [storageReady, setStorageReady] = useState(false);
@@ -85,6 +88,11 @@ export default function EntryForm({
     try {
       if (kind === "item" && !categoryIds.length)
         throw new Error("请至少选择一个物品小类");
+      if (kind === "item" && price.trim()) {
+        if (!/^(?:0|[1-9]\d{0,5})(?:\.\d{1,2})?$/.test(price.trim())) {
+          throw new Error("请输入有效价格（元，最多两位小数）");
+        }
+      }
       const coords = {
         ...(location.lat.trim() ? { lat: Number(location.lat) } : {}),
         ...(location.lng.trim() ? { lng: Number(location.lng) } : {}),
@@ -103,7 +111,12 @@ export default function EntryForm({
               ...coords,
               address_text: address,
               tagNames: tags,
-              ...(kind === "place" ? { cuisineIds } : { categoryIds }),
+              ...(kind === "place"
+                ? { cuisineIds }
+                : {
+                    categoryIds,
+                    ...(price.trim() ? { price: Number(price.trim()) } : {}),
+                  }),
             }),
           },
         );
@@ -125,7 +138,12 @@ export default function EntryForm({
           ...coords,
           address_text: address,
           tagNames: tags,
-          ...(kind === "place" ? { cuisineIds } : { categoryIds }),
+          ...(kind === "place"
+            ? { cuisineIds }
+            : {
+                categoryIds,
+                ...(price.trim() ? { price: Number(price.trim()) } : {}),
+              }),
         }),
       );
       let photoFailed = false;
@@ -160,23 +178,25 @@ export default function EntryForm({
       ) : (
         <fieldset>
           <legend>记录类型</legend>
-          {(
-            [
-              { value: "place", label: "餐饮店" },
-              { value: "item", label: "物品" },
-            ] as const
-          ).map((option) => (
-            <label className="choice" key={option.value}>
-              <input
-                type="radio"
-                name="kind"
-                value={option.value}
-                checked={kind === option.value}
-                onChange={() => setKind(option.value)}
-              />
-              {option.label}
-            </label>
-          ))}
+          <div className="choice-buttons">
+            {(
+              [
+                { value: "place", label: "餐饮" },
+                { value: "item", label: "物品" },
+              ] as const
+            ).map((option) => (
+              <label className="choice-button" key={option.value}>
+                <input
+                  type="radio"
+                  name="kind"
+                  value={option.value}
+                  checked={kind === option.value}
+                  onChange={() => setKind(option.value)}
+                />
+                {option.label}
+              </label>
+            ))}
+          </div>
         </fieldset>
       )}
       <label htmlFor="name">{kind === "place" ? "餐饮名称" : "物品名称"}</label>
@@ -200,9 +220,28 @@ export default function EntryForm({
       ) : (
         <CategoryPicker value={categoryIds} onChange={setCategoryIds} />
       )}
+      {kind === "item" && (
+        <div className="price-field">
+          <label htmlFor="price">价格（选填，元）</label>
+          <div className="price-field-input">
+            <input
+              id="price"
+              type="number"
+              step="0.01"
+              min={0}
+              inputMode="decimal"
+              placeholder="例如：12.5"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+            />
+            <span className="muted">元</span>
+          </div>
+        </div>
+      )}
       <LocationField
         value={location}
         onChange={setLocation}
+        onAddressResolved={setAddress}
         required={kind === "place"}
       />
       <label htmlFor="address">地址（选填）</label>

@@ -13,7 +13,7 @@ const food: Food = {
   lat: 31, lng: 121, address_text: null, created_at: '2026-10-30T00:00:00Z',
   cuisines: [], tags: [],
 };
-const entry: Entry = { ...food, kind: 'place', categories: [] };
+const entry: Entry = { ...food, kind: 'place', categories: [], price: null };
 
 describe('rating displays', () => {
   it.each(['entry', 'food'])('renders four full stars and one half star for a 4.5 %s rating', kind => {

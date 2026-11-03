@@ -23,18 +23,21 @@ export default function PhotoPicker({
   disabled = false,
   storageReady = true,
   allowReorder = true,
+  existingCount = 0,
 }: {
   value: PickerPhoto[];
   onChange: (next: PickerPhoto[]) => void;
   disabled?: boolean;
   storageReady?: boolean;
   allowReorder?: boolean;
+  existingCount?: number;
 }) {
   const albumRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const blobUrls = useRef(new Set<string>());
   const [hint, setHint] = useState("");
-  const full = value.length >= MAX_PHOTOS;
+  const full = existingCount + value.length >= MAX_PHOTOS;
+  const room = MAX_PHOTOS - existingCount - value.length;
   const blocked = disabled || !storageReady || full;
 
   useEffect(() => {
@@ -63,8 +66,7 @@ export default function PhotoPicker({
       setHint("请粘贴图片");
       return;
     }
-    const room = MAX_PHOTOS - value.length;
-    const added = images.slice(0, room).map((file, index) => ({
+    const added = images.slice(0, Math.max(0, room)).map((file, index) => ({
       previewUrl: URL.createObjectURL(file),
       file,
       sort: value.length + index,
@@ -181,9 +183,11 @@ export default function PhotoPicker({
           ))}
         </ul>
       )}
-      <p className="error" role="alert">
-        {hint}
-      </p>
+      {hint ? (
+        <p className="error" role="alert">
+          {hint}
+        </p>
+      ) : null}
     </div>
   );
 }

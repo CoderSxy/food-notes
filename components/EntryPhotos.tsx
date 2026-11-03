@@ -2,15 +2,9 @@
 import { useState } from "react";
 import { requestJson } from "@/lib/browser";
 import { uploadEntryPhoto } from "@/lib/browser-photos";
-import {
-  MAX_PHOTOS,
-  nextPhotoSort,
-  type EntryPhotoThumb,
-} from "@/lib/photo-constants";
-import PhotoPicker, {
-  revokePickerPreviews,
-  type PickerPhoto,
-} from "./PhotoPicker";
+import { nextPhotoSort, type EntryPhotoThumb } from "@/lib/photo-constants";
+import ConfirmDialog from "./ConfirmDialog";
+import PhotoPicker, { type PickerPhoto } from "./PhotoPicker";
 
 export default function EntryPhotos({
   entryId,
@@ -27,41 +21,52 @@ export default function EntryPhotos({
 }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const pending: PickerPhoto[] = [];
+  const [pending, setPending] = useState<PickerPhoto[]>([]);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
 
   async function remove(id: string) {
-    if (!window.confirm("确定删除这张照片吗？")) return;
     setBusy(true);
     setError("");
     try {
       await requestJson(`/api/photos/${encodeURIComponent(id)}`, {
         method: "DELETE",
       });
+      setConfirmId(null);
       onChange(photos.filter((photo) => photo.id !== id));
     } catch (e) {
       setError((e as Error).message);
+      setConfirmId(null);
     } finally {
       setBusy(false);
     }
   }
 
-  async function addPending(next: PickerPhoto[]) {
-    const files = next.filter((photo) => photo.file).map((photo) => photo.file!);
-    if (!files.length) return;
-    revokePickerPreviews(next);
+  async function handlePickerChange(next: PickerPhoto[]) {
+    const previous = new Set(pending.map((photo) => photo.previewUrl));
+    const added = next.filter(
+      (photo) => photo.file && !previous.has(photo.previewUrl),
+    );
+    setPending(next);
+    if (!added.length) return;
     setBusy(true);
     setError("");
     let current = photos;
     try {
-      for (const file of files) {
+      for (const item of added) {
         const photo = await uploadEntryPhoto(
           entryId,
-          file,
+          item.file!,
           nextPhotoSort(current),
         );
         current = [...current, photo];
+        onChange(current);
+        setPending((list) =>
+          list.filter((row) => row.previewUrl !== item.previewUrl),
+        );
+        if (item.previewUrl.startsWith("blob:")) {
+          URL.revokeObjectURL(item.previewUrl);
+        }
       }
-      onChange(current);
     } catch (e) {
       onChange(current);
       setError((e as Error).message);
@@ -86,7 +91,7 @@ export default function EntryPhotos({
                     type="button"
                     className="danger"
                     disabled={busy}
-                    onClick={() => void remove(photo.id)}
+                    onClick={() => setConfirmId(photo.id)}
                   >
                     删除
                   </button>
@@ -96,18 +101,32 @@ export default function EntryPhotos({
           ))}
         </ul>
       )}
-      {isOwner && photos.length < MAX_PHOTOS && (
+      {isOwner && (
         <PhotoPicker
           value={pending}
-          onChange={(next) => void addPending(next)}
+          onChange={(next) => void handlePickerChange(next)}
           disabled={busy}
           storageReady={storageReady}
           allowReorder={false}
+          existingCount={photos.length}
         />
       )}
-      <p className="error" role="alert">
-        {error}
-      </p>
+      {error ? (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      ) : null}
+      <ConfirmDialog
+        open={confirmId !== null}
+        title="删除照片"
+        message="确定删除这张照片吗？"
+        confirmLabel="删除"
+        busy={busy}
+        onDismiss={() => setConfirmId(null)}
+        onConfirm={() => {
+          if (confirmId) void remove(confirmId);
+        }}
+      />
     </section>
   );
 }

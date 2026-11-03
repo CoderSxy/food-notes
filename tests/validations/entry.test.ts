@@ -34,6 +34,27 @@ describe('entryCreateSchema', () => {
     expect(entryCreateSchema.safeParse({ ...item, lat: 91 }).success).toBe(false);
     expect(entryCreateSchema.safeParse({ ...place, lng: -181 }).success).toBe(false);
   });
+  it("accepts optional item prices with up to two decimals", () => {
+    const priced = entryCreateSchema.parse({ ...item, price: 12.5 });
+    expect(priced.kind).toBe("item");
+    if (priced.kind === "item") expect(priced.price).toBe(12.5);
+    const zero = entryCreateSchema.parse({ ...item, price: 0 });
+    if (zero.kind === "item") expect(zero.price).toBe(0);
+    const text = entryCreateSchema.parse({ ...item, price: "12.50" });
+    if (text.kind === "item") expect(text.price).toBe(12.5);
+    const omitted = entryCreateSchema.parse(item);
+    if (omitted.kind === "item") expect(omitted.price).toBeUndefined();
+    expect(entryCreateSchema.safeParse({ ...item, price: -1 }).success).toBe(false);
+    expect(entryCreateSchema.safeParse({ ...item, price: 12.555 }).success).toBe(false);
+    expect(entryCreateSchema.safeParse({ ...item, price: 10000000 }).success).toBe(false);
+  });
+
+  it("drops price on place payloads", () => {
+    expect(
+      entryCreateSchema.parse({ ...place, price: 12.5 }),
+    ).not.toHaveProperty("price");
+  });
+
   it('treats EntryUpdate as the create payload so kind stays in the same schema', () => {
     const parsed: EntryUpdate = entryCreateSchema.parse(place);
     const create: EntryCreate = parsed;

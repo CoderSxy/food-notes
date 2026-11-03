@@ -13,6 +13,7 @@ const card = (id: string): Entry => ({
   lat: null,
   lng: null,
   address_text: null,
+  price: null,
   created_at: "",
   cuisines: [],
   categories: [],

@@ -35,13 +35,14 @@ const entry: Entry = {
   lat: 31,
   lng: 121,
   address_text: null,
+  price: null,
   created_at: "2026-11-01T00:00:00Z",
   cuisines: [],
   categories: [],
   tags: [],
 };
 
-it("shows edit and delete only for the owner", () => {
+it("shows edit and delete icon controls only for the owner", () => {
   const { rerender } = render(
     createElement(EntryCard, { entry, source: "/entries?scope=all" }),
   );
@@ -49,6 +50,8 @@ it("shows edit and delete only for the owner", () => {
     "/entries/e1/edit?from=%2Fentries%3Fscope%3Dall",
   );
   expect(screen.getByRole("button", { name: "删除" })).toBeTruthy();
+  expect(document.querySelector(".entry-card-actions")).toBeNull();
+  expect(document.querySelector(".entry-card-toolbar")).toBeTruthy();
 
   auth.userId = "other";
   rerender(createElement(EntryCard, { entry, source: "/entries?scope=all" }));
@@ -56,19 +59,21 @@ it("shows edit and delete only for the owner", () => {
   expect(screen.queryByRole("button", { name: "删除" })).toBeNull();
 });
 
-it("does not delete when the confirm is cancelled", async () => {
+it("does not delete when the dialog is cancelled", async () => {
   const fetchMock = vi.fn();
   vi.stubGlobal("fetch", fetchMock);
-  vi.stubGlobal("confirm", () => false);
   const onDeleted = vi.fn();
   render(createElement(EntryCard, { entry, onDeleted }));
   fireEvent.click(screen.getByRole("button", { name: "删除" }));
+  expect(screen.getByRole("dialog", { name: "删除记录" })).toBeTruthy();
+  expect(fetchMock).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "取消" }));
   expect(fetchMock).not.toHaveBeenCalled();
   expect(onDeleted).not.toHaveBeenCalled();
+  expect(screen.queryByRole("dialog")).toBeNull();
 });
 
-it("deletes after confirm and notifies the list", async () => {
-  vi.stubGlobal("confirm", () => true);
+it("deletes after dialog confirm and notifies the list", async () => {
   vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
     expect(String(url)).toBe("/api/entries/e1");
     expect(init?.method).toBe("DELETE");
@@ -77,18 +82,39 @@ it("deletes after confirm and notifies the list", async () => {
   const onDeleted = vi.fn();
   render(createElement(EntryCard, { entry, onDeleted }));
   fireEvent.click(screen.getByRole("button", { name: "删除" }));
-  expect(await screen.findByRole("button", { name: "正在删除…" })).toBeTruthy();
+  fireEvent.click(
+    screen.getByRole("dialog").querySelector("button.danger") as HTMLButtonElement,
+  );
+  expect(
+    await screen.findAllByRole("button", { name: "正在删除…" }),
+  ).not.toHaveLength(0);
   await vi.waitFor(() => expect(onDeleted).toHaveBeenCalledWith("e1"));
 });
 
+it("shows a price pill only when the item has a price", () => {
+  const item = {
+    ...entry,
+    kind: "item" as const,
+    lat: null,
+    lng: null,
+    price: 12.5,
+  };
+  const { rerender } = render(createElement(EntryCard, { entry: item }));
+  expect(screen.getByText("12.5 元")).toBeTruthy();
+  rerender(createElement(EntryCard, { entry: { ...item, price: null } }));
+  expect(screen.queryByText(/元$/)).toBeNull();
+});
+
 it("keeps the card and shows the API error when delete fails", async () => {
-  vi.stubGlobal("confirm", () => true);
   vi.stubGlobal("fetch", async () =>
     Response.json({ error: "只能删除自己的记录" }, { status: 403 }),
   );
   const onDeleted = vi.fn();
   render(createElement(EntryCard, { entry, onDeleted }));
   fireEvent.click(screen.getByRole("button", { name: "删除" }));
+  fireEvent.click(
+    screen.getByRole("dialog").querySelector("button.danger") as HTMLButtonElement,
+  );
   expect(await screen.findByRole("alert")).toHaveTextContent(
     "只能删除自己的记录",
   );

@@ -70,3 +70,16 @@ it("adds a pasted image to the picker", () => {
     "blob:preview",
   );
 });
+
+it("counts already-saved photos against the three-photo cap", () => {
+  render(
+    createElement(PhotoPicker, {
+      value: [{ previewUrl: "blob:one", file: new File(["x"], "a.png", { type: "image/png" }), sort: 0 }],
+      onChange: () => {},
+      existingCount: 2,
+    }),
+  );
+  expect(
+    (screen.getByRole("button", { name: "相册" }) as HTMLButtonElement).disabled,
+  ).toBe(true);
+});

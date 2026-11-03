@@ -21,6 +21,7 @@ export type Entry = {
   lat: number | null;
   lng: number | null;
   address_text: string | null;
+  price: number | null;
   created_at: string;
   updated_at?: string;
   cuisines: DictionaryItem[];
@@ -43,6 +44,7 @@ export function hydrateEntry(raw: RawEntry): Entry {
   const { entry_cuisines, entry_categories, entry_tags, ...entry } = raw;
   return {
     ...entry,
+    price: entry.price ?? null,
     cuisines: entry_cuisines.map((v) => v.cuisines),
     categories: entry_categories.map((v) => v.categories),
     tags: entry_tags.map((v) => v.tags),
@@ -176,7 +178,8 @@ export async function createEntry(userId: string, parsed: EntryCreate) {
   const fields =
     rest.kind === "place"
       ? (({ cuisineIds: _ids, ...fields }) => fields)(rest)
-      : (({ categoryIds: _ids, ...fields }) => fields)(rest);
+      : (({ categoryIds: _ids, price, ...fields }) =>
+          price === undefined ? fields : { ...fields, price })(rest);
   const { data: entry, error } = await admin
     .from("entries")
     .insert({ ...fields, user_id: userId })
@@ -264,6 +267,7 @@ export async function updateEntry(
           lat: parsed.lat ?? null,
           lng: parsed.lng ?? null,
           address_text: parsed.address_text ?? null,
+          price: parsed.price ?? null,
           updated_at: new Date().toISOString(),
         };
 

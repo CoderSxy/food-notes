@@ -1268,20 +1268,70 @@ input[type="range"] {
   gap: 6px;
 }
 .entry-cover-dot {
-  width: 7px;
-  height: 7px;
-  padding: 0;
+  position: relative;
+  box-sizing: content-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 6px;
+  height: 6px;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 9px;
   border: 0;
+  border-radius: 0;
+  background: transparent;
+  appearance: none;
+  flex: 0 0 auto;
+  overflow: visible;
+}
+.entry-cover-dot::after {
+  content: "";
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.55);
 }
 .entry-cover-dot[aria-current="true"] {
+  background: transparent;
+}
+.entry-cover-dot[aria-current="true"]::after {
+  width: 8px;
+  height: 8px;
   background: var(--terracotta);
 }
 .entry-card-actions {
   display: flex;
   gap: 8px;
   margin-top: 12px;
+}
+.entry-card-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 8px;
+}
+a.icon-button,
+button.icon-button {
+  width: 40px;
+  height: 40px;
+  min-height: 0;
+  padding: 0;
+  border-radius: 10px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+}
+a.icon-button:hover,
+button.icon-button:hover {
+  background: var(--stamp);
+  color: var(--terracotta);
+  text-decoration: none;
+}
+button.icon-button-danger:hover {
+  color: var(--danger);
+  background: #fff5f5;
 }
 .photo-gallery {
   margin: 16px 0 8px;
@@ -1299,4 +1349,92 @@ input[type="range"] {
   height: 88px;
   border-radius: 8px;
   margin: 0 0 8px;
+}
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(32 36 44 / 40%);
+}
+.confirm-dialog {
+  width: min(100%, 360px);
+  padding: 20px 22px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+.confirm-dialog h2 {
+  font-size: 18px;
+}
+.confirm-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .confirm-backdrop,
+  .confirm-dialog {
+    transition: none;
+  }
+}
+.choice-buttons {
+  display: flex;
+  gap: 8px;
+}
+.choice-buttons--wrap {
+  flex-wrap: wrap;
+}
+.choice-buttons--stack {
+  flex-direction: column;
+}
+.choice-button {
+  position: relative;
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+}
+.choice-button--wrap {
+  flex: 0 0 auto;
+  min-height: 36px;
+}
+.choice-button--block {
+  display: flex;
+  flex: none;
+  width: 100%;
+  justify-content: flex-start;
+  margin: 6px 0;
+}
+.choice-button input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+.choice-button:has(input:checked) {
+  background: var(--stamp);
+  border-color: var(--terracotta);
+  color: var(--terracotta);
+}
+.price-field-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.price-field-input input {
+  max-width: 160px;
 }

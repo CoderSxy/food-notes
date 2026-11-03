@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { createElement, Suspense } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import Detail from '@/app/entries/[id]/page';
 import type { Entry } from '@/lib/entries';
 
@@ -13,7 +13,7 @@ vi.mock('@/components/map/dynamic', () => ({
 
 const entry: Entry = {
   id: 'entry', user_id: 'user', name: '面馆', note: null, rating: 4.5,
-  lat: 31, lng: 121, address_text: null, created_at: '2026-10-30T00:30:00Z',
+  lat: 31, lng: 121, address_text: null, price: null, created_at: '2026-10-30T00:30:00Z',
   kind: 'place', cuisines: [], categories: [], tags: [],
 };
 
@@ -98,6 +98,38 @@ it('omits the mini-map when the entry has no coordinates', async () => {
   expect(screen.queryByTestId('entry-mini-map')).toBeNull();
 });
 
+it("opens an in-app confirm and does not delete on cancel", async () => {
+  const fetchMock = vi.fn(async (url: string) =>
+    Response.json(
+      String(url).includes("/api/auth/me")
+        ? { user: { userId: "user" } }
+        : String(url).includes("/api/photos/status")
+          ? { configured: true }
+          : { entry },
+    ),
+  );
+  vi.stubGlobal("fetch", fetchMock);
+  const params = Promise.resolve({ id: "entry" });
+  await act(async () => {
+    render(
+      createElement(
+        Suspense,
+        { fallback: "加载中" },
+        createElement(Detail, { params }),
+      ),
+    );
+  });
+  fireEvent.click(await screen.findByRole("button", { name: "删除我的记录" }));
+  expect(screen.getByRole("dialog", { name: "删除记录" })).toBeTruthy();
+  const deleteCalls = fetchMock.mock.calls.filter((call) => {
+    const [url, init] = call as unknown as [string, RequestInit | undefined];
+    return String(url).includes("/api/entries/") && init?.method === "DELETE";
+  });
+  expect(deleteCalls).toHaveLength(0);
+  fireEvent.click(screen.getByRole("button", { name: "取消" }));
+  expect(screen.queryByRole("dialog")).toBeNull();
+});
+
 it('links the owner to the edit page', async () => {
   vi.stubGlobal('fetch', async (url: string) => Response.json(
     String(url).includes('/api/auth/me')
@@ -113,4 +145,26 @@ it('links the owner to the edit page', async () => {
   const edit = await screen.findByRole('link', { name: '编辑' });
   expect(edit.getAttribute('href')).toMatch(/^\/entries\/entry\/edit\?from=/);
   expect(screen.getByRole('button', { name: '删除我的记录' })).toBeTruthy();
+});
+
+it("shows the item price next to the rating when present", async () => {
+  vi.stubGlobal("fetch", async (url: string) =>
+    Response.json(
+      String(url).includes("/api/auth/me")
+        ? { user: { userId: "user" } }
+        : String(url).includes("/api/photos/status")
+          ? { configured: true }
+          : { entry: { ...entry, kind: "item", price: 12.5, lat: null, lng: null } },
+    ),
+  );
+  await act(async () => {
+    render(
+      createElement(
+        Suspense,
+        { fallback: "加载中" },
+        createElement(Detail, { params: Promise.resolve({ id: "entry" }) }),
+      ),
+    );
+  });
+  expect(await screen.findByText("12.5 元")).toBeTruthy();
 });

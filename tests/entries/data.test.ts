@@ -13,7 +13,7 @@ import { createEntry, entrySelect, nearbyPlaceEntries, updateEntry } from '@/lib
 import { assertLeafCategoryIds } from '@/lib/categories';
 const id = '11111111-1111-4111-8111-111111111111';
 const item = { kind: 'item' as const, name: 'IPA', rating: 5, categoryIds: [id], tagNames: [] };
-const raw = { id: 'e', user_id: 'u', kind: 'place', name: '面馆', rating: 4, note: null, address_text: null, created_at: '', lat: 31, lng: 121, entry_cuisines: [], entry_categories: [], entry_tags: [] };
+const raw = { id: 'e', user_id: 'u', kind: 'place', name: '面馆', rating: 4, note: null, address_text: null, price: null, created_at: '', lat: 31, lng: 121, entry_cuisines: [], entry_categories: [], entry_tags: [] };
 beforeEach(() => { db.queries = []; db.results = []; });
 describe('entry data boundaries', () => {
   it('embeds category parents by parent_id because PostgREST has no named self-FK', () => {
@@ -101,6 +101,84 @@ describe('entry data boundaries', () => {
     await expect(
       updateEntry('u', 'e', { kind: 'item', name: 'IPA', rating: 5, categoryIds: [id], tagNames: [] }),
     ).rejects.toMatchObject({ status: 400, message: '不能更改记录类型' });
+  });
+
+  it("writes item price on create and clears it on update", async () => {
+    const priced = { ...item, price: 12.5 };
+    db.results.push(
+      { data: [{ id, parent_id: "root" }], error: null },
+      { data: { id: "e" }, error: null },
+      { error: null },
+      {
+        data: {
+          ...raw,
+          kind: "item",
+          lat: null,
+          lng: null,
+          price: 12.5,
+          entry_categories: [{ categories: { id, name: "啤酒", parent_id: "root" } }],
+        },
+        error: null,
+      },
+    );
+    await createEntry("u", priced);
+    expect(db.queries[1].ops).toContainEqual([
+      "insert",
+      { kind: "item", name: "IPA", rating: 5, price: 12.5, user_id: "u" },
+    ]);
+  });
+
+  it("writes null item price when omitted and omits price on place updates", async () => {
+    db.results.push(
+      { data: { ...raw, kind: "item", user_id: "u", lat: null, lng: null }, error: null },
+      { data: [], error: null },
+      { data: [{ id, parent_id: "root" }], error: null },
+      { error: null },
+      { error: null },
+      { error: null },
+      { error: null },
+      { error: null },
+      { data: { ...raw, kind: "item", lat: null, lng: null, price: null, entry_categories: [{ categories: { id, name: "啤酒", parent_id: "root" } }], entry_cuisines: [], entry_tags: [] }, error: null },
+      { data: [], error: null },
+    );
+    await updateEntry("u", "e", {
+      kind: "item",
+      name: "IPA",
+      rating: 5,
+      categoryIds: [id],
+      tagNames: [],
+    });
+    const entriesUpdate = db.queries.find(
+      (query) => query.table === "entries" && query.ops[0]?.[0] === "update",
+    );
+    expect(entriesUpdate?.ops[0]?.[1]).toMatchObject({ price: null });
+
+    db.queries = [];
+    db.results = [
+      { data: raw, error: null },
+      { data: [], error: null },
+      { error: null },
+      { error: null },
+      { error: null },
+      { error: null },
+      { data: [{ id: "t", name: "清爽" }], error: null },
+      { error: null },
+      { data: raw, error: null },
+      { data: [], error: null },
+    ];
+    await updateEntry("u", "e", {
+      kind: "place",
+      name: "面馆",
+      rating: 4,
+      lat: 31,
+      lng: 121,
+      cuisineIds: [],
+      tagNames: ["清爽"],
+    });
+    const placeUpdate = db.queries.find(
+      (query) => query.table === "entries" && query.ops[0]?.[0] === "update",
+    );
+    expect(placeUpdate?.ops[0]?.[1]).not.toHaveProperty("price");
   });
 
   it('forbids updating another user record', async () => {
