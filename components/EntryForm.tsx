@@ -241,6 +241,7 @@ export default function EntryForm({
       <LocationField
         value={location}
         onChange={setLocation}
+        onAddressResolved={setAddress}
         required={kind === "place"}
       />
       <label htmlFor="address">地址（选填）</label>

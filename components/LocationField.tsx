@@ -1,7 +1,8 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { DynamicLocationPickerMap } from '@/components/map/dynamic';
+import { useRef, useState } from "react";
+import { DynamicLocationPickerMap } from "@/components/map/dynamic";
+import { requestJson } from "@/lib/browser";
 
 export type LocationValue = { lat: string; lng: string };
 
@@ -10,32 +11,88 @@ export default function LocationField({
   onChange,
   required = true,
   withPicker = true,
+  onAddressResolved,
 }: {
   value: LocationValue;
   onChange: (value: LocationValue) => void;
   required?: boolean;
   withPicker?: boolean;
+  onAddressResolved?: (addressText: string) => void;
 }) {
-  const [message, setMessage] = useState('可获取当前位置，也可手动输入经纬度。');
+  const [message, setMessage] = useState(
+    "可获取当前位置，也可手动输入经纬度。",
+  );
   const [busy, setBusy] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+  const cacheRef = useRef(new Map<string, string>());
+
+  async function lookup(next: LocationValue) {
+    if (!onAddressResolved) return;
+    const lat = Number(next.lat);
+    const lng = Number(next.lng);
+    if (
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng) ||
+      lat < -90 ||
+      lat > 90 ||
+      lng < -180 ||
+      lng > 180
+    ) {
+      return;
+    }
+    setMessage("正在查找地址…");
+    abortRef.current?.abort();
+    const cacheKey = `${lat.toFixed(5)},${lng.toFixed(5)}`;
+    const cached = cacheRef.current.get(cacheKey);
+    if (cached) {
+      onAddressResolved(cached);
+      setMessage("已填入地址，可再修改");
+      return;
+    }
+    const controller = new AbortController();
+    abortRef.current = controller;
+    try {
+      const data = await requestJson<{ address_text: string | null }>(
+        `/api/geocode/reverse?lat=${lat}&lng=${lng}`,
+        { signal: controller.signal },
+      );
+      if (controller.signal.aborted) return;
+      if (data.address_text) {
+        cacheRef.current.set(cacheKey, data.address_text);
+        onAddressResolved(data.address_text);
+        setMessage("已填入地址，可再修改");
+        return;
+      }
+      setMessage("已定位，未能自动填入地址，可手动填写");
+    } catch (error) {
+      if (controller.signal.aborted) return;
+      const name =
+        typeof error === "object" && error && "name" in error
+          ? String(error.name)
+          : "";
+      if (name === "AbortError") return;
+      setMessage("已定位，未能自动填入地址，可手动填写");
+    }
+  }
 
   function locate() {
     if (!navigator.geolocation) {
-      setMessage('浏览器不支持定位，请手动输入经纬度');
+      setMessage("浏览器不支持定位，请手动输入经纬度");
       return;
     }
     setBusy(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        onChange({
+        const next = {
           lat: String(position.coords.latitude),
           lng: String(position.coords.longitude),
-        });
-        setMessage('已获取当前位置，请确认是否为记录所在地');
+        };
+        onChange(next);
         setBusy(false);
+        void lookup(next);
       },
       () => {
-        setMessage('无法获取定位，请手动输入大致经纬度');
+        setMessage("无法获取定位，请手动输入大致经纬度");
         setBusy(false);
       },
       { enableHighAccuracy: true, timeout: 10000 },
@@ -44,13 +101,26 @@ export default function LocationField({
 
   return (
     <fieldset>
-      <legend>地点{required ? '（必填）' : '（选填）'}</legend>
-      <button type="button" className="secondary" disabled={busy} onClick={locate}>
-        {busy ? '正在定位…' : '获取当前位置'}
+      <legend>地点{required ? "（必填）" : "（选填）"}</legend>
+      <button
+        type="button"
+        className="secondary"
+        disabled={busy}
+        onClick={locate}
+      >
+        {busy ? "正在定位…" : "获取当前位置"}
       </button>
-      <p className="muted" role="status">{message}</p>
+      <p className="muted" role="status">
+        {message}
+      </p>
       {withPicker && (
-        <DynamicLocationPickerMap value={value} onChange={onChange} />
+        <DynamicLocationPickerMap
+          value={value}
+          onChange={(next) => {
+            onChange(next);
+            void lookup(next);
+          }}
+        />
       )}
       <div className="row">
         <div>
