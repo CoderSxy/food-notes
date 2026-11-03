@@ -24,6 +24,7 @@ const entry: Entry = {
   lat: 31,
   lng: 121,
   address_text: null,
+  price: null,
   created_at: "2026-11-01T00:00:00Z",
   cuisines: [],
   categories: [],

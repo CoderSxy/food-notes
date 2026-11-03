@@ -13,7 +13,7 @@ vi.mock('@/components/map/dynamic', () => ({
 
 const entry: Entry = {
   id: 'entry', user_id: 'user', name: '面馆', note: null, rating: 4.5,
-  lat: 31, lng: 121, address_text: null, created_at: '2026-10-30T00:30:00Z',
+  lat: 31, lng: 121, address_text: null, price: null, created_at: '2026-10-30T00:30:00Z',
   kind: 'place', cuisines: [], categories: [], tags: [],
 };
 
@@ -121,11 +121,10 @@ it("opens an in-app confirm and does not delete on cancel", async () => {
   });
   fireEvent.click(await screen.findByRole("button", { name: "删除我的记录" }));
   expect(screen.getByRole("dialog", { name: "删除记录" })).toBeTruthy();
-  const deleteCalls = fetchMock.mock.calls.filter(
-    (call) =>
-      String(call[0]).includes("/api/entries/") &&
-      (call[1] as RequestInit | undefined)?.method === "DELETE",
-  );
+  const deleteCalls = fetchMock.mock.calls.filter((call) => {
+    const [url, init] = call as unknown as [string, RequestInit | undefined];
+    return String(url).includes("/api/entries/") && init?.method === "DELETE";
+  });
   expect(deleteCalls).toHaveLength(0);
   fireEvent.click(screen.getByRole("button", { name: "取消" }));
   expect(screen.queryByRole("dialog")).toBeNull();

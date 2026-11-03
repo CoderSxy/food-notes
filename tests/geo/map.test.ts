@@ -18,6 +18,7 @@ function entry(partial: Partial<Entry> & Pick<Entry, 'id' | 'user_id'>): Entry {
     lat: null,
     lng: null,
     address_text: null,
+    price: null,
     created_at: '2026-01-01T00:00:00.000Z',
     cuisines: [],
     categories: [],

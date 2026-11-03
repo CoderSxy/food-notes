@@ -40,6 +40,7 @@ const entry: Entry = {
   lat: 31,
   lng: 121,
   address_text: "南京西路",
+  price: null,
   created_at: "2026-11-01T00:00:00Z",
   cuisines: [{ id: "c1", name: "本帮" }],
   categories: [],

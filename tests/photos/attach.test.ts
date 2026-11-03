@@ -44,6 +44,7 @@ const base = {
   lat: 31,
   lng: 121,
   address_text: null,
+  price: null,
   created_at: "",
   cuisines: [],
   categories: [],
