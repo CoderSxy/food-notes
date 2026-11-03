@@ -1323,3 +1323,35 @@ input[type="range"] {
   border-radius: 8px;
   margin: 0 0 8px;
 }
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(32 36 44 / 40%);
+}
+.confirm-dialog {
+  width: min(100%, 360px);
+  padding: 20px 22px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+.confirm-dialog h2 {
+  font-size: 18px;
+}
+.confirm-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .confirm-backdrop,
+  .confirm-dialog {
+    transition: none;
+  }
+}
