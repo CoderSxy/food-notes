@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { createElement, Suspense } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import Detail from '@/app/entries/[id]/page';
 import type { Entry } from '@/lib/entries';
 
@@ -96,6 +96,39 @@ it('omits the mini-map when the entry has no coordinates', async () => {
   });
   await screen.findByText('未记录地点');
   expect(screen.queryByTestId('entry-mini-map')).toBeNull();
+});
+
+it("opens an in-app confirm and does not delete on cancel", async () => {
+  const fetchMock = vi.fn(async (url: string) =>
+    Response.json(
+      String(url).includes("/api/auth/me")
+        ? { user: { userId: "user" } }
+        : String(url).includes("/api/photos/status")
+          ? { configured: true }
+          : { entry },
+    ),
+  );
+  vi.stubGlobal("fetch", fetchMock);
+  const params = Promise.resolve({ id: "entry" });
+  await act(async () => {
+    render(
+      createElement(
+        Suspense,
+        { fallback: "加载中" },
+        createElement(Detail, { params }),
+      ),
+    );
+  });
+  fireEvent.click(await screen.findByRole("button", { name: "删除我的记录" }));
+  expect(screen.getByRole("dialog", { name: "删除记录" })).toBeTruthy();
+  const deleteCalls = fetchMock.mock.calls.filter(
+    (call) =>
+      String(call[0]).includes("/api/entries/") &&
+      (call[1] as RequestInit | undefined)?.method === "DELETE",
+  );
+  expect(deleteCalls).toHaveLength(0);
+  fireEvent.click(screen.getByRole("button", { name: "取消" }));
+  expect(screen.queryByRole("dialog")).toBeNull();
 });
 
 it('links the owner to the edit page', async () => {

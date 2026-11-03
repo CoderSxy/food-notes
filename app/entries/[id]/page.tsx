@@ -3,6 +3,7 @@ import { use, useEffect, useState } from "react";
 import { safeNext } from "@/lib/auth/redirect";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import RatingStars from "@/components/RatingStars";
 import { DynamicEntryMiniMap } from "@/components/map/dynamic";
 import type { Entry } from "@/lib/entries";
@@ -22,6 +23,7 @@ export default function Detail({
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
   const [storageReady, setStorageReady] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setSource(safeNext(params.get("from") || "/entries?scope=mine"));
@@ -54,7 +56,6 @@ export default function Detail({
     };
   }, [id]);
   async function remove() {
-    if (!window.confirm("确定删除这条记录吗？")) return;
     setBusy(true);
     try {
       await requestJson(`/api/entries/${encodeURIComponent(id)}`, {
@@ -158,10 +159,19 @@ export default function Detail({
               <button
                 className="danger"
                 disabled={busy}
-                onClick={() => void remove()}
+                onClick={() => setConfirming(true)}
               >
                 {busy ? "正在删除…" : "删除我的记录"}
               </button>
+              <ConfirmDialog
+                open={confirming}
+                title="删除记录"
+                message="确定删除这条记录吗？删除后无法恢复。"
+                confirmLabel="删除"
+                busy={busy}
+                onDismiss={() => setConfirming(false)}
+                onConfirm={() => void remove()}
+              />
             </p>
           )}
         </article>
