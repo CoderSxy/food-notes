@@ -91,6 +91,20 @@ it("deletes after dialog confirm and notifies the list", async () => {
   await vi.waitFor(() => expect(onDeleted).toHaveBeenCalledWith("e1"));
 });
 
+it("shows a price pill only when the item has a price", () => {
+  const item = {
+    ...entry,
+    kind: "item" as const,
+    lat: null,
+    lng: null,
+    price: 12.5,
+  };
+  const { rerender } = render(createElement(EntryCard, { entry: item }));
+  expect(screen.getByText("12.5 元")).toBeTruthy();
+  rerender(createElement(EntryCard, { entry: { ...item, price: null } }));
+  expect(screen.queryByText(/元$/)).toBeNull();
+});
+
 it("keeps the card and shows the API error when delete fails", async () => {
   vi.stubGlobal("fetch", async () =>
     Response.json({ error: "只能删除自己的记录" }, { status: 403 }),

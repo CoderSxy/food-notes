@@ -7,6 +7,7 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 import RatingStars from "@/components/RatingStars";
 import { DynamicEntryMiniMap } from "@/components/map/dynamic";
 import type { Entry } from "@/lib/entries";
+import { formatPrice } from "@/lib/format-price";
 import { requestJson } from "@/lib/browser";
 import { hasCoords } from "@/lib/geo/map";
 import EntryPhotos from "@/components/EntryPhotos";
@@ -55,6 +56,7 @@ export default function Detail({
       active = false;
     };
   }, [id]);
+  const priceLabel = formatPrice(entry?.price);
   async function remove() {
     setBusy(true);
     try {
@@ -89,6 +91,7 @@ export default function Detail({
           <p className="rating">
             <RatingStars value={entry.rating} /> · {entry.rating} 分
           </p>
+          {priceLabel ? <p>{priceLabel}</p> : null}
           <p>{entry.address_text || "未填写详细地址"}</p>
           <p className="muted">
             {hasCoords(entry)

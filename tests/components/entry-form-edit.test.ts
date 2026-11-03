@@ -109,6 +109,48 @@ it("prefills edit fields, locks kind, and saves with PUT back to the list", asyn
   expect(push).toHaveBeenCalledWith("/entries?scope=all&kind=place");
 });
 
+it("omits price from an item PUT when the field is cleared", async () => {
+  const itemEntry: Entry = {
+    ...entry,
+    kind: "item",
+    lat: null,
+    lng: null,
+    price: 12.5,
+    cuisines: [],
+    categories: [{ id: "c1", name: "啤酒", parent_id: "r", parent: { name: "酒水" } }],
+  };
+  const puts: RequestInit[] = [];
+  stubFetch((path, init) => {
+    if (path === "/api/entries/e1" && init?.method === "PUT") {
+      puts.push(init);
+      return Response.json({ entry: itemEntry });
+    }
+  });
+  await act(async () => {
+    render(createElement(EntryForm, { mode: "edit", entry: itemEntry }));
+  });
+  const input = screen.getByLabelText("价格（选填，元）") as HTMLInputElement;
+  fireEvent.change(input, { target: { value: "" } });
+  await act(async () => {
+    fireEvent.click(screen.getByRole("button", { name: "保存修改" }));
+  });
+  expect(puts).toHaveLength(1);
+  expect(JSON.parse(String(puts[0]?.body))).not.toHaveProperty("price");
+});
+
+it("shows a yuan price field for items and omits it for places", async () => {
+  stubFetch();
+  await act(async () => {
+    render(createElement(EntryForm));
+  });
+  expect(screen.queryByLabelText("价格（选填，元）")).toBeNull();
+  fireEvent.click(screen.getByRole("radio", { name: "物品" }));
+  const input = screen.getByLabelText("价格（选填，元）") as HTMLInputElement;
+  expect(input.getAttribute("step")).toBe("0.01");
+  expect(input.getAttribute("min")).toBe("0");
+  expect(input.getAttribute("placeholder")).toBe("例如：12.5");
+});
+
 it("still posts a create and does not lock kind", async () => {
   const posts: string[] = [];
   stubFetch((path, init) => {

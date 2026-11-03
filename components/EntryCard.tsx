@@ -7,6 +7,7 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 import EntryCoverCarousel from "@/components/EntryCoverCarousel";
 import RatingStars from "@/components/RatingStars";
 import type { Entry } from "@/lib/entries";
+import { formatPrice } from "@/lib/format-price";
 import type { EntryPhotoThumb } from "@/lib/photo-constants";
 
 export function slidesForEntry(
@@ -39,6 +40,7 @@ export default function EntryCard({
     (entry.lat !== null && entry.lng !== null
       ? `${entry.lat.toFixed(4)}, ${entry.lng.toFixed(4)}`
       : "未记录地点");
+  const priceLabel = formatPrice(entry.price);
 
   async function remove() {
     setBusy(true);
@@ -92,6 +94,7 @@ export default function EntryCard({
             #{t.name}
           </span>
         ))}
+        {priceLabel ? <span className="pill">{priceLabel}</span> : null}
       </div>
       {entry.note && (
         <p className="note">

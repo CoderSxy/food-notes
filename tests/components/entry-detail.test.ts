@@ -146,3 +146,25 @@ it('links the owner to the edit page', async () => {
   expect(edit.getAttribute('href')).toMatch(/^\/entries\/entry\/edit\?from=/);
   expect(screen.getByRole('button', { name: '删除我的记录' })).toBeTruthy();
 });
+
+it("shows the item price next to the rating when present", async () => {
+  vi.stubGlobal("fetch", async (url: string) =>
+    Response.json(
+      String(url).includes("/api/auth/me")
+        ? { user: { userId: "user" } }
+        : String(url).includes("/api/photos/status")
+          ? { configured: true }
+          : { entry: { ...entry, kind: "item", price: 12.5, lat: null, lng: null } },
+    ),
+  );
+  await act(async () => {
+    render(
+      createElement(
+        Suspense,
+        { fallback: "加载中" },
+        createElement(Detail, { params: Promise.resolve({ id: "entry" }) }),
+      ),
+    );
+  });
+  expect(await screen.findByText("12.5 元")).toBeTruthy();
+});
