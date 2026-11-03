@@ -1306,6 +1306,33 @@ input[type="range"] {
   gap: 8px;
   margin-top: 12px;
 }
+.entry-card-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 8px;
+}
+a.icon-button,
+button.icon-button {
+  width: 40px;
+  height: 40px;
+  min-height: 0;
+  padding: 0;
+  border-radius: 10px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+}
+a.icon-button:hover,
+button.icon-button:hover {
+  background: var(--stamp);
+  color: var(--terracotta);
+  text-decoration: none;
+}
+button.icon-button-danger:hover {
+  color: var(--danger);
+  background: #fff5f5;
+}
 .photo-gallery {
   margin: 16px 0 8px;
 }
