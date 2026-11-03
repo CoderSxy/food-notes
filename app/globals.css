@@ -1382,3 +1382,48 @@ button.icon-button-danger:hover {
     transition: none;
   }
 }
+.choice-buttons {
+  display: flex;
+  gap: 8px;
+}
+.choice-buttons--wrap {
+  flex-wrap: wrap;
+}
+.choice-button {
+  position: relative;
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+}
+.choice-button--wrap {
+  flex: 0 0 auto;
+  min-height: 36px;
+}
+.choice-button--block {
+  display: flex;
+  flex: none;
+  width: 100%;
+  justify-content: flex-start;
+  margin: 6px 0;
+}
+.choice-button input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+.choice-button:has(input:checked) {
+  background: var(--stamp);
+  border-color: var(--terracotta);
+  color: var(--terracotta);
+}

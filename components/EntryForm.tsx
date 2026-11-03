@@ -160,23 +160,25 @@ export default function EntryForm({
       ) : (
         <fieldset>
           <legend>记录类型</legend>
-          {(
-            [
-              { value: "place", label: "餐饮店" },
-              { value: "item", label: "物品" },
-            ] as const
-          ).map((option) => (
-            <label className="choice" key={option.value}>
-              <input
-                type="radio"
-                name="kind"
-                value={option.value}
-                checked={kind === option.value}
-                onChange={() => setKind(option.value)}
-              />
-              {option.label}
-            </label>
-          ))}
+          <div className="choice-buttons">
+            {(
+              [
+                { value: "place", label: "餐饮" },
+                { value: "item", label: "物品" },
+              ] as const
+            ).map((option) => (
+              <label className="choice-button" key={option.value}>
+                <input
+                  type="radio"
+                  name="kind"
+                  value={option.value}
+                  checked={kind === option.value}
+                  onChange={() => setKind(option.value)}
+                />
+                {option.label}
+              </label>
+            ))}
+          </div>
         </fieldset>
       )}
       <label htmlFor="name">{kind === "place" ? "餐饮名称" : "物品名称"}</label>

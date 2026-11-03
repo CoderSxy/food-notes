@@ -119,8 +119,9 @@ it("still posts a create and does not lock kind", async () => {
   await act(async () => {
     render(createElement(EntryForm));
   });
-  expect(screen.getByRole("radio", { name: "餐饮店" })).toBeTruthy();
+  expect(screen.getByRole("radio", { name: "餐饮" })).toBeTruthy();
   expect(screen.getByRole("radio", { name: "物品" })).toBeTruthy();
+  expect(screen.queryByRole("radio", { name: "餐饮店" })).toBeNull();
   expect(screen.getByTestId("photo-picker")).toBeTruthy();
   expect(screen.queryByTestId("entry-photos")).toBeNull();
 });
