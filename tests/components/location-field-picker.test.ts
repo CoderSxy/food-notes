@@ -106,6 +106,47 @@ describe('LocationField with picker', () => {
     );
     fireEvent.click(screen.getByText("模拟点选"));
     expect(
+      await screen.findByText("已定位，暂时无法解析地址"),
+    ).toBeTruthy();
+    expect(onAddressResolved).not.toHaveBeenCalled();
+  });
+
+  it("surfaces a reverse-geocode timeout instead of a generic miss", async () => {
+    const onAddressResolved = vi.fn();
+    vi.stubGlobal("fetch", async () =>
+      Response.json(
+        { error: "查找地址超时，可稍后重试或手动填写" },
+        { status: 504 },
+      ),
+    );
+    render(
+      createElement(LocationField, {
+        value: { lat: "", lng: "" },
+        onChange: () => {},
+        onAddressResolved,
+      }),
+    );
+    fireEvent.click(screen.getByText("模拟点选"));
+    expect(
+      await screen.findByText("已定位，查找地址超时，可稍后重试或手动填写"),
+    ).toBeTruthy();
+    expect(onAddressResolved).not.toHaveBeenCalled();
+  });
+
+  it("keeps the generic miss copy when Nominatim returns an empty address", async () => {
+    const onAddressResolved = vi.fn();
+    vi.stubGlobal("fetch", async () =>
+      Response.json({ address_text: null }),
+    );
+    render(
+      createElement(LocationField, {
+        value: { lat: "", lng: "" },
+        onChange: () => {},
+        onAddressResolved,
+      }),
+    );
+    fireEvent.click(screen.getByText("模拟点选"));
+    expect(
       await screen.findByText("已定位，未能自动填入地址，可手动填写"),
     ).toBeTruthy();
     expect(onAddressResolved).not.toHaveBeenCalled();

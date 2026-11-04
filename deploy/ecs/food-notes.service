@@ -11,7 +11,7 @@ Group=food-notes
 WorkingDirectory=/opt/food-notes/current
 Environment=NODE_ENV=production
 Environment=PATH=/opt/node-v22.22.0/bin:/usr/local/bin:/usr/bin:/bin
-Environment=NODE_OPTIONS=--max-old-space-size=384
+Environment="NODE_OPTIONS=--max-old-space-size=384 --dns-result-order=ipv4first"
 EnvironmentFile=/etc/food-notes/food-notes.env
 ExecStart=/opt/node-v22.22.0/bin/node node_modules/next/dist/bin/next start --hostname 127.0.0.1 --port 3200
 Restart=on-failure
