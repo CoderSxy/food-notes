@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { DynamicLocationPickerMap } from "@/components/map/dynamic";
-import { requestJson } from "@/lib/browser";
+import { ApiError, requestJson } from "@/lib/browser";
 
 export type LocationValue = { lat: string; lng: string };
 
@@ -71,7 +71,10 @@ export default function LocationField({
           ? String(error.name)
           : "";
       if (name === "AbortError") return;
-      setMessage("已定位，未能自动填入地址，可手动填写");
+      const detail = error instanceof ApiError ? error.message.trim() : "";
+      setMessage(
+        detail ? `已定位，${detail}` : "已定位，未能自动填入地址，可手动填写",
+      );
     }
   }
 
